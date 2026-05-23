@@ -1,0 +1,957 @@
+openapi: 3.1.0
+info:
+  title: Aerial Housing Detection API
+  description: API para detecção de habitações em imagens aéreas com cruzamento CadUnico
+  version: 1.0.0
+  contact:
+    name: Prefeitura de Paulista-PE
+    email: ti@paulista.pe.gov.br
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8000
+    description: Desenvolvimento local
+  - url: https://staging.aerial.paulista.pe.gov.br
+    description: Staging
+  - url: https://aerial.paulista.pe.gov.br
+    description: Producao
+
+tags:
+  - name: auth
+    description: Autenticacao e gerenciamento de usuarios
+  - name: detect
+    description: Deteccao de habitacoes em imagens aereas
+  - name: monitoring
+    description: Monitoramento do modelo e metricas
+  - name: lgpd
+    description: Compliance LGPD e gestao de dados pessoais
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags: [monitoring]
+      security: []
+      responses:
+        "200":
+          description: Sistema saudavel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/auth/register:
+    post:
+      summary: Registrar novo usuario
+      operationId: register
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Usuario criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Email ja cadastrado
+
+  /api/v1/auth/login:
+    post:
+      summary: Autenticar usuario
+      operationId: login
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login bem sucedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Renovar access token
+      operationId: refresh
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/me:
+    get:
+      summary: Dados do usuario autenticado
+      operationId: getMe
+      tags: [auth]
+      responses:
+        "200":
+          description: Dados do usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/users:
+    get:
+      summary: Listar usuarios (admin)
+      operationId: listUsers
+      tags: [auth]
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/auth/api-keys:
+    post:
+      summary: Criar API key
+      operationId: createApiKey
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKeyRequest"
+      responses:
+        "201":
+          description: API key criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyResponse"
+    get:
+      summary: Listar API keys do usuario
+      operationId: listApiKeys
+      tags: [auth]
+      responses:
+        "200":
+          description: Lista de API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKeyListItem"
+
+  /api/v1/auth/api-keys/{key_id}:
+    delete:
+      summary: Revogar API key
+      operationId: revokeApiKey
+      tags: [auth]
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: API key revogada
+        "404":
+          description: API key nao encontrada
+
+  /api/v1/detect/analyze:
+    post:
+      summary: Analisar imagem aerea
+      operationId: analyzeImage
+      tags: [detect]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                confidence_threshold:
+                  type: number
+                  minimum: 0.0
+                  maximum: 1.0
+                  default: 0.5
+                region:
+                  type: string
+      responses:
+        "200":
+          description: Analise concluida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: Imagem excede tamanho maximo
+
+  /api/v1/detect/analyze/batch:
+    post:
+      summary: Analisar multiplas imagens
+      operationId: analyzeBatch
+      tags: [detect]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 10
+                confidence_threshold:
+                  type: number
+                  default: 0.5
+      responses:
+        "200":
+          description: Analise batch concluida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchAnalysisResponse"
+
+  /api/v1/detect/results/{analysis_id}:
+    get:
+      summary: Consultar resultado de analise
+      operationId: getResult
+      tags: [detect]
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resultado da analise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResponse"
+        "404":
+          description: Analise nao encontrada
+
+  /api/v1/detect/cross-reference/{analysis_id}:
+    post:
+      summary: Cruzar deteccoes com CadUnico
+      operationId: crossReference
+      tags: [detect]
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cruzamento concluido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossReferenceResponse"
+        "404":
+          description: Analise nao encontrada
+
+  /api/v1/detect/config:
+    get:
+      summary: Configuracao atual do pipeline
+      operationId: getConfig
+      tags: [detect]
+      responses:
+        "200":
+          description: Configuracao do pipeline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineConfig"
+
+  /api/v1/monitoring/metrics:
+    get:
+      summary: Metricas do modelo
+      operationId: getMetrics
+      tags: [monitoring]
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d, 30d]
+            default: 24h
+      responses:
+        "200":
+          description: Metricas agregadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsResponse"
+
+  /api/v1/monitoring/drift:
+    get:
+      summary: Status de drift do modelo
+      operationId: getDrift
+      tags: [monitoring]
+      responses:
+        "200":
+          description: Resultado da analise de drift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriftResponse"
+
+  /api/v1/monitoring/alerts:
+    get:
+      summary: Alertas ativos
+      operationId: getAlerts
+      tags: [monitoring]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved, all]
+            default: active
+      responses:
+        "200":
+          description: Lista de alertas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /api/v1/monitoring/alerts/{alert_id}/acknowledge:
+    post:
+      summary: Reconhecer alerta
+      operationId: acknowledgeAlert
+      tags: [monitoring]
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Alerta reconhecido
+
+  /api/v1/monitoring/export:
+    get:
+      summary: Exportar metricas em JSON
+      operationId: exportMetrics
+      tags: [monitoring]
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        "200":
+          description: Dados exportados
+
+  /api/v1/lgpd/audit-log:
+    get:
+      summary: Consultar audit trail
+      operationId: getAuditLog
+      tags: [lgpd]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        "200":
+          description: Registros de auditoria
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogPage"
+
+  /api/v1/lgpd/consent:
+    post:
+      summary: Registrar consentimento
+      operationId: registerConsent
+      tags: [lgpd]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentRequest"
+      responses:
+        "201":
+          description: Consentimento registrado
+
+  /api/v1/lgpd/consent/{subject_id}:
+    get:
+      summary: Consultar consentimentos de um titular
+      operationId: getConsent
+      tags: [lgpd]
+      parameters:
+        - name: subject_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Consentimentos do titular
+
+  /api/v1/lgpd/deletion-request:
+    post:
+      summary: Solicitar exclusao de dados
+      operationId: requestDeletion
+      tags: [lgpd]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeletionRequest"
+      responses:
+        "201":
+          description: Solicitacao registrada
+
+  /api/v1/lgpd/deletion-request/{request_id}:
+    get:
+      summary: Consultar status de solicitacao
+      operationId: getDeletionStatus
+      tags: [lgpd]
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status da solicitacao
+
+  /api/v1/lgpd/report:
+    get:
+      summary: Gerar relatorio LGPD
+      operationId: generateReport
+      tags: [lgpd]
+      responses:
+        "200":
+          description: Relatorio de compliance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LGPDReport"
+
+  /api/v1/lgpd/dpo:
+    get:
+      summary: Informacoes do Encarregado de Dados
+      operationId: getDPO
+      tags: [lgpd]
+      security: []
+      responses:
+        "200":
+          description: Dados de contato do DPO
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DPOInfo"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  responses:
+    BadRequest:
+      description: Requisicao invalida
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Nao autenticado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Sem permissao
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Limite de requisicoes excedido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+
+    RegisterRequest:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        full_name:
+          type: string
+        role:
+          type: string
+          enum: [viewer, analyst, admin]
+          default: viewer
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        role:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreateApiKeyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        expires_in_days:
+          type: integer
+          default: 90
+
+    ApiKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key:
+          type: string
+          description: Retornado apenas na criacao
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    ApiKeyListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+        uptime_seconds:
+          type: number
+        models:
+          type: object
+          properties:
+            spacenet:
+              type: string
+            bootstrap:
+              type: string
+        checks:
+          type: object
+
+    AnalysisResponse:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+        status:
+          type: string
+          enum: [completed, failed]
+        image_metadata:
+          type: object
+          properties:
+            filename:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+            format:
+              type: string
+        detections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Detection"
+        summary:
+          type: object
+          properties:
+            total_detections:
+              type: integer
+            average_confidence:
+              type: number
+            processing_time_ms:
+              type: number
+        created_at:
+          type: string
+          format: date-time
+
+    Detection:
+      type: object
+      properties:
+        id:
+          type: string
+        bbox:
+          $ref: "#/components/schemas/BBox"
+        confidence:
+          type: number
+        class_name:
+          type: string
+        stage1_confidence:
+          type: number
+        stage2_confidence:
+          type: number
+
+    BBox:
+      type: object
+      properties:
+        x_min:
+          type: number
+        y_min:
+          type: number
+        x_max:
+          type: number
+        y_max:
+          type: number
+
+    BatchAnalysisResponse:
+      type: object
+      properties:
+        batch_id:
+          type: string
+        total_images:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisResponse"
+        total_processing_time_ms:
+          type: number
+
+    CrossReferenceResponse:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              detection_id:
+                type: string
+              cadunico_match:
+                type: boolean
+              anonymized_data:
+                type: object
+                properties:
+                  cpf_hash:
+                    type: string
+                  name_initials:
+                    type: string
+                  address_masked:
+                    type: string
+                  income_range:
+                    type: string
+        total_matches:
+          type: integer
+        match_rate:
+          type: number
+
+    PipelineConfig:
+      type: object
+      properties:
+        spacenet_confidence_threshold:
+          type: number
+        spacenet_nms_threshold:
+          type: number
+        bootstrap_confidence_threshold:
+          type: number
+        tile_size:
+          type: integer
+        tile_overlap:
+          type: integer
+        max_image_size_mb:
+          type: integer
+        supported_formats:
+          type: array
+          items:
+            type: string
+
+    MetricsResponse:
+      type: object
+      properties:
+        period:
+          type: string
+        total_predictions:
+          type: integer
+        average_confidence:
+          type: number
+        average_latency_ms:
+          type: number
+        error_rate:
+          type: number
+        detections_per_image:
+          type: number
+        confidence_distribution:
+          type: object
+
+    DriftResponse:
+      type: object
+      properties:
+        psi_score:
+          type: number
+        status:
+          type: string
+          enum: [stable, moderate_drift, severe_drift]
+        reference_period:
+          type: string
+        current_period:
+          type: string
+        sample_size:
+          type: integer
+        bin_details:
+          type: array
+          items:
+            type: object
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        severity:
+          type: string
+          enum: [warning, critical]
+        message:
+          type: string
+        status:
+          type: string
+          enum: [active, acknowledged, resolved]
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLogPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              user_id:
+                type: string
+              action:
+                type: string
+              resource:
+                type: string
+              data_categories:
+                type: array
+                items:
+                  type: string
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    ConsentRequest:
+      type: object
+      required: [subject_id, purpose]
+      properties:
+        subject_id:
+          type: string
+        purpose:
+          type: string
+        legal_basis:
+          type: string
+
+    DeletionRequest:
+      type: object
+      required: [subject_id, reason]
+      properties:
+        subject_id:
+          type: string
+        reason:
+          type: string
+
+    LGPDReport:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        total_data_subjects:
+          type: integer
+        active_consents:
+          type: integer
+        pending_deletions:
+          type: integer
+        audit_entries_count:
+          type: integer
+        compliance_status:
+          type: string
+
+    DPOInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        department:
+          type: string

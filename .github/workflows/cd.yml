@@ -1,0 +1,333 @@
+name: CD - Build, Push & Deploy
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ambiente de deploy"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: "Testes pre-deploy"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Rodar testes
+        env:
+          AUTH_SECRET_KEY: ci-test-secret-key-do-not-use-in-prod
+          ADMIN_EMAIL: admin@test.local
+          ADMIN_PASSWORD: test-password-123
+          DETECTION_MOCK_INFERENCE: "true"
+        run: |
+          python -m pytest tests/ -v --tb=short -q
+
+  build:
+    name: "Build & Push Docker"
+    runs-on: ubuntu-latest
+    needs: test
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extrair versao
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="sha-$(echo ${{ github.sha }} | cut -c1-7)"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Versao: $VERSION"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extrair metadata Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build e Push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_SHA=${{ github.sha }}
+
+      - name: Resumo do build
+        run: |
+          echo "## Docker Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagem | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Versao | \`${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Digest | \`${{ steps.build.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tags | ${{ steps.meta.outputs.tags }} |" >> $GITHUB_STEP_SUMMARY
+
+  deploy-staging:
+    name: "Deploy Staging"
+    runs-on: ubuntu-latest
+    needs: build
+
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "Iniciando deploy staging..."
+            cd /opt/aerial-housing-detection
+
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+            cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
+
+            sed -i "s/^MODEL_VERSION=.*/MODEL_VERSION=${{ needs.build.outputs.version }}/" .env
+
+            docker-compose down
+            docker-compose up -d
+
+            echo "Aguardando health check..."
+
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+                echo "Staging healthy"
+                exit 0
+              fi
+
+              echo "tentativa $i/30..."
+              sleep 2
+            done
+
+            echo "Health check falhou apos 60s"
+            docker-compose logs --tail=50
+            exit 1
+
+      - name: Smoke test
+        run: |
+          STAGING_URL="${{ vars.STAGING_URL }}"
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "/health retornou $HTTP_CODE"
+            exit 1
+          fi
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/api/v1/docs")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "/api/v1/docs retornou $HTTP_CODE"
+            exit 1
+          fi
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "$STAGING_URL/api/v1/auth/login" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"admin@aerial.local","password":"${{ secrets.STAGING_ADMIN_PASSWORD }}"}')
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "/auth/login retornou $HTTP_CODE"
+          fi
+
+      - name: Resumo do deploy
+        if: always()
+        run: |
+          echo "## Deploy Staging" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Versao | \`${{ needs.build.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | ${{ vars.STAGING_URL }} |" >> $GITHUB_STEP_SUMMARY
+
+  deploy-production:
+    name: "Deploy Producao"
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'production'
+
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "Iniciando deploy producao..."
+            cd /opt/aerial-housing-detection
+
+            IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}"
+            echo "Imagem: $IMAGE"
+
+            docker pull "$IMAGE"
+
+            BACKUP_DIR="/opt/backups/aerial/$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "$BACKUP_DIR"
+
+            cp .env "$BACKUP_DIR/"
+            cp docker-compose.yml "$BACKUP_DIR/"
+
+            docker-compose exec -T app pg_dump > "$BACKUP_DIR/db.sql" 2>/dev/null || true
+
+            export APP_IMAGE="$IMAGE"
+
+            sed -i "s|^MODEL_VERSION=.*|MODEL_VERSION=${{ needs.build.outputs.version }}|" .env
+
+            docker-compose up -d --no-deps --build app
+
+            echo "Aguardando health check..."
+
+            for i in $(seq 1 60); do
+              if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+                echo "Producao healthy"
+                exit 0
+              fi
+
+              echo "tentativa $i/60..."
+              sleep 3
+            done
+
+            echo "Health check falhou. Executando rollback..."
+
+            cp "$BACKUP_DIR/.env" .env
+            cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
+
+            docker-compose up -d
+            exit 1
+
+      - name: Smoke test producao
+        run: |
+          PROD_URL="${{ vars.PRODUCTION_URL }}"
+
+          RESPONSE=$(curl -sf "$PROD_URL/health")
+          STATUS=$(echo "$RESPONSE" | jq -r '.status')
+
+          if [ "$STATUS" != "healthy" ]; then
+            echo "Status: $STATUS"
+            exit 1
+          fi
+
+      - name: Resumo do deploy
+        if: always()
+        run: |
+          echo "## Deploy Producao" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Versao | \`${{ needs.build.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | ${{ vars.PRODUCTION_URL }} |" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: "Notificacao"
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging, deploy-production]
+
+    if: always()
+
+    steps:
+      - name: Status do pipeline
+        run: |
+          echo "## Pipeline CD Completo" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Staging | ${{ needs.deploy-staging.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Producao | ${{ needs.deploy-production.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notificar falha
+        if: failure()
+        run: |
+          echo "Pipeline CD falhou"
