@@ -71,3 +71,22 @@ docker-dev:
 
 docker-logs:
 	docker compose logs -f
+
+run-aerial:
+	python -m uvicorn src.aerial_housing_detection.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+test-aerial:
+	python -m pytest tests/test_api tests/test_pipeline tests/test_reports -v
+
+lint-aerial:
+	python -m ruff check config src/aerial_housing_detection tests/test_api tests/test_pipeline tests/test_reports
+
+format-aerial:
+	python -m ruff format config src/aerial_housing_detection tests/test_api tests/test_pipeline tests/test_reports
+
+compile-aerial:
+	python -m compileall config src/aerial_housing_detection tests/test_api tests/test_pipeline tests/test_reports
+
+type-check-aerial:
+	python -m mypy src/aerial_housing_detection tests/test_api tests/test_pipeline tests	/test_reports	
+	

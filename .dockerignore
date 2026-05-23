@@ -34,3 +34,19 @@ LICENSE
 *.log
 .DS_Store
 Thumbs.db
+# Aerial housing detection outputs
+reports/*.csv
+reports/*.html
+data/outputs/
+data/processed/
+data/uploads/
+data/results/
+
+# Keep directory structure
+!reports/.gitkeep
+!data/outputs/.gitkeep
+!data/processed/.gitkeep
+
+# Local runtime files
+*.log
+.env.local
