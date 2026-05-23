@@ -5,10 +5,9 @@ import threading
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
-if TYPE_CHECKING:
-    from src.auth.models import ApiKey, Role, User
+from src.auth.models import ApiKey, KeyStatus, Role, User
 
 T = TypeVar("T")
 
@@ -128,10 +127,6 @@ class ApiKeyJsonStore(BaseStore[ApiKey]):
         store_dir: str | Path | None = None,
         filename: str = DEFAULT_FILENAME,
     ) -> None:
-        from src.auth.models import ApiKey
-
-        self._ApiKey = ApiKey
-
         super().__init__(
             store_dir=store_dir or self.DEFAULT_DIR,
             filename=filename,
@@ -144,7 +139,7 @@ class ApiKeyJsonStore(BaseStore[ApiKey]):
         return item.to_dict()
 
     def _deserialize_item(self, data: dict[str, Any]) -> ApiKey:
-        return self._ApiKey.from_dict(data)
+        return ApiKey.from_dict(data)
 
     def _extract_key(self, item: ApiKey) -> str:
         return item.key_hash
@@ -174,8 +169,6 @@ class ApiKeyJsonStore(BaseStore[ApiKey]):
         self._clear()
 
     def remove_revoked(self) -> int:
-        from src.auth.models import KeyStatus
-
         return self._remove_where(lambda key: key.status == KeyStatus.REVOKED)
 
     def save(self) -> None:
@@ -296,10 +289,6 @@ class UserJsonStore(BaseStore[User]):
         store_dir: str | Path | None = None,
         filename: str = DEFAULT_FILENAME,
     ) -> None:
-        from src.auth.models import User
-
-        self._User = User
-
         super().__init__(
             store_dir=store_dir or self.DEFAULT_DIR,
             filename=filename,
@@ -312,7 +301,7 @@ class UserJsonStore(BaseStore[User]):
         return item.to_dict()
 
     def _deserialize_item(self, data: dict[str, Any]) -> User:
-        return self._User.from_dict(data)
+        return User.from_dict(data)
 
     def _extract_key(self, item: User) -> str:
         return item.username
@@ -325,12 +314,10 @@ class UserJsonStore(BaseStore[User]):
         hashed_password: str,
         role: Role | None = None,
     ) -> User:
-        from src.auth.models import Role as RoleEnum
-
         if role is None:
-            role = RoleEnum.VIEWER
+            role = Role.VIEWER
 
-        user = self._User(
+        user = User(
             username=username,
             email=email,
             full_name=full_name,
