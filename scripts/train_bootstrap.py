@@ -13,7 +13,7 @@ Uso:
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 try:
@@ -30,9 +30,9 @@ except ImportError:
     sys.exit(1)
 
 from src.detect.config import detect_settings
-from src.monitoring.prediction_logger import PredictionLogger
 from src.monitoring.alert_manager import AlertManager
 from src.monitoring.models import AlertSeverity
+from src.monitoring.prediction_logger import PredictionLogger
 
 # ---------------------------------------------------------------------------
 # Transforms
@@ -493,7 +493,7 @@ def main() -> None:
     metrics = {
         "project": "Identificacao Aerea",
         "script": "train_bootstrap",
-        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "trained_at": datetime.now(UTC).isoformat(),
         "device": str(device),
         "best_val_acc": round(best_val_acc, 4),
         "total_epochs": len(history),

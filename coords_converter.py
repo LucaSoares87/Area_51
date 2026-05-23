@@ -9,10 +9,10 @@ Cola direto do Google Earth no formato:
     8°06'49.86"S 34°56'46.11"W
 """
 
-import re
-import sys
 import math
+import re
 import subprocess
+import sys
 
 
 def dms_to_decimal(dms_string: str) -> float:
@@ -114,7 +114,7 @@ def main():
                 break
             except ValueError as e:
                 print(f"    {e}")
-                print(f"   Tenta de novo...")
+                print("   Tenta de novo...")
 
     # Bounding box
     lats = [p[0] for p in pontos]
@@ -147,13 +147,13 @@ def main():
     print("    RESUMO DA ÁREA")
     print("=" * 60)
 
-    print(f"\n  Bounding Box:")
+    print("\n  Bounding Box:")
     print(f"    lat_min: {bbox['lat_min']}")
     print(f"    lat_max: {bbox['lat_max']}")
     print(f"    lon_min: {bbox['lon_min']}")
     print(f"    lon_max: {bbox['lon_max']}")
 
-    print(f"\n   Dimensões estimadas:")
+    print("\n   Dimensões estimadas:")
     print(f"    Altura:  {altura:.3f} km")
     print(f"    Largura: {largura:.3f} km")
     print(f"    Área:    {area:.3f} km²")
@@ -212,7 +212,7 @@ def main():
             f"    --output-dir {output_dir} \\\n"
             f"    --delay {delay}"
         )
-        print(f"\n  Comando para rodar depois:\n")
+        print("\n  Comando para rodar depois:\n")
         print(cmd_str)
 
     print()

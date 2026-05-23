@@ -19,7 +19,6 @@ import cv2
 
 from src.detect.config import detect_settings
 
-
 WINDOW_NAME = "Area 51 - Auditoria"
 
 
@@ -129,18 +128,18 @@ def print_report(
     print(f"  Acuracia:     {accuracy:.1f}%")
 
     if accuracy >= 95:
-        print(f"\n  ✓ Qualidade EXCELENTE. Dataset confiavel.")
+        print("\n  ✓ Qualidade EXCELENTE. Dataset confiavel.")
     elif accuracy >= 85:
-        print(f"\n  ⚠ Qualidade ACEITAVEL. Revise os erros abaixo.")
+        print("\n  ⚠ Qualidade ACEITAVEL. Revise os erros abaixo.")
     else:
-        print(f"\n  ✗ Qualidade INSUFICIENTE. Re-rotule o dataset.")
+        print("\n  ✗ Qualidade INSUFICIENTE. Re-rotule o dataset.")
 
     if corrections:
-        print(f"\n  Correcoes necessarias:")
+        print("\n  Correcoes necessarias:")
         for c in corrections:
             print(f"    {c['file']}: {c['was']} → {c['should_be']}")
 
-        print(f"\n  Para corrigir manualmente:")
+        print("\n  Para corrigir manualmente:")
         for c in corrections:
             src = c["path"]
             dest = src.replace(f"/{c['was']}/", f"/{c['should_be']}/")
@@ -174,12 +173,12 @@ def main() -> None:
         print(f"  Classe filtrada: {args.target_class}")
     if args.seed is not None:
         print(f"  Seed:            {args.seed}")
-    print(f"\n  Instrucoes:")
-    print(f"    ENTER = confirma label atual (correto)")
-    print(f"    1     = deveria ser POSITIVO")
-    print(f"    0     = deveria ser NEGATIVO")
-    print(f"    2     = deveria ser INCERTO")
-    print(f"    ESC   = encerrar auditoria")
+    print("\n  Instrucoes:")
+    print("    ENTER = confirma label atual (correto)")
+    print("    1     = deveria ser POSITIVO")
+    print("    0     = deveria ser NEGATIVO")
+    print("    2     = deveria ser INCERTO")
+    print("    ESC   = encerrar auditoria")
     print("-" * 60)
 
     correct = 0

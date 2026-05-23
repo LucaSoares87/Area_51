@@ -1,7 +1,6 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from threading import Lock
-from typing import Optional
 
 from src.lgpd.config import lgpd_settings
 from src.lgpd.models import ConsentRecord, ConsentStatus
@@ -18,7 +17,7 @@ class ConsentManager:
         purpose: str,
         granted_by: str = "",
     ) -> ConsentRecord:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expires_at = now + timedelta(days=lgpd_settings.consent_expiry_days)
 
         record = ConsentRecord(
@@ -36,7 +35,7 @@ class ConsentManager:
 
         return record
 
-    def revoke(self, consent_id: str) -> Optional[ConsentRecord]:
+    def revoke(self, consent_id: str) -> ConsentRecord | None:
         with self._lock:
             for record in self._records:
                 if record.consent_id == consent_id:
@@ -44,7 +43,7 @@ class ConsentManager:
                     return record
         return None
 
-    def get_by_id(self, consent_id: str) -> Optional[ConsentRecord]:
+    def get_by_id(self, consent_id: str) -> ConsentRecord | None:
         with self._lock:
             for record in self._records:
                 if record.consent_id == consent_id:

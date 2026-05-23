@@ -12,8 +12,8 @@ import sys
 import time
 from pathlib import Path
 
-from src.detect.config import detect_settings
 from src.dataset import ImageTiler
+from src.detect.config import detect_settings
 
 
 def parse_args() -> argparse.Namespace:

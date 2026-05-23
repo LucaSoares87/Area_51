@@ -1,7 +1,6 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from threading import Lock
-from typing import Optional, Union
 
 from src.lgpd.config import lgpd_settings
 from src.lgpd.models import DeletionRequest, DeletionStatus
@@ -18,7 +17,7 @@ class DataDeletionService:
         reason: str,
         requested_by: str = "",
     ) -> DeletionRequest:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         deadline = now + timedelta(days=lgpd_settings.deletion_max_processing_days)
 
         request = DeletionRequest(
@@ -36,25 +35,25 @@ class DataDeletionService:
 
         return request
 
-    def approve(self, request_id: str) -> Optional[DeletionRequest]:
+    def approve(self, request_id: str) -> DeletionRequest | None:
         with self._lock:
             for req in self._requests:
                 if req.id == request_id and req.status == DeletionStatus.PENDING:
                     req.status = DeletionStatus.APPROVED
-                    req.approved_at = datetime.now(timezone.utc)
+                    req.approved_at = datetime.now(UTC)
                     return req
         return None
 
-    def execute(self, request_id: str) -> Optional[DeletionRequest]:
+    def execute(self, request_id: str) -> DeletionRequest | None:
         with self._lock:
             for req in self._requests:
                 if req.id == request_id and req.status == DeletionStatus.APPROVED:
                     req.status = DeletionStatus.EXECUTED
-                    req.executed_at = datetime.now(timezone.utc)
+                    req.executed_at = datetime.now(UTC)
                     return req
         return None
 
-    def reject(self, request_id: str) -> Optional[DeletionRequest]:
+    def reject(self, request_id: str) -> DeletionRequest | None:
         with self._lock:
             for req in self._requests:
                 if req.id == request_id and req.status == DeletionStatus.PENDING:
@@ -62,7 +61,7 @@ class DataDeletionService:
                     return req
         return None
 
-    def get_by_id(self, request_id: str) -> Optional[DeletionRequest]:
+    def get_by_id(self, request_id: str) -> DeletionRequest | None:
         with self._lock:
             for req in self._requests:
                 if req.id == request_id:
@@ -71,9 +70,9 @@ class DataDeletionService:
 
     def list_requests(
         self,
-        subject_id: Optional[str] = None,
+        subject_id: str | None = None,
         limit: int = 50,
-        status: Optional[Union[DeletionStatus, str]] = None,
+        status: DeletionStatus | str | None = None,
     ) -> list[dict]:
         with self._lock:
             results = list(self._requests)

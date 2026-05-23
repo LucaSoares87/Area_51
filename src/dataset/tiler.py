@@ -1,11 +1,13 @@
 """Motor de tileamento de imagens aéreas com rastreabilidade."""
 
 import json
-import cv2
-import numpy as np
 from pathlib import Path
 
+import cv2
+import numpy as np
+
 from src.detect.config import detect_settings
+
 from .metadata import TileMetadata, TileRecord
 
 

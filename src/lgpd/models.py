@@ -3,7 +3,7 @@ Modelos de dados para conformidade com a LGPD.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 from uuid import uuid4
@@ -110,7 +110,7 @@ class AuditEntry:
     detail: str = ""
     ip_address: str = ""
     timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -138,7 +138,7 @@ class AuditEntry:
             timestamp=(
                 datetime.fromisoformat(data["timestamp"])
                 if data.get("timestamp")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             metadata=data.get("metadata", {}),
         )
@@ -150,7 +150,7 @@ class DataSubject:
     external_ref: str = ""
     category: DataCategory = DataCategory.PERSONAL
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -172,7 +172,7 @@ class DataSubject:
             created_at=(
                 datetime.fromisoformat(data["created_at"])
                 if data.get("created_at")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             metadata=data.get("metadata", {}),
         )
@@ -189,7 +189,7 @@ class PersonalDataRecord:
     storage_location: str = ""
     retention_days: int = 30
     collected_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     expires_at: datetime | None = None
     anonymized: bool = False
@@ -200,7 +200,7 @@ class PersonalDataRecord:
     def is_expired(self) -> bool:
         if self.expires_at is None:
             return False
-        return datetime.now(timezone.utc) > self.expires_at
+        return datetime.now(UTC) > self.expires_at
 
     @property
     def is_sensitive(self) -> bool:
@@ -239,7 +239,7 @@ class PersonalDataRecord:
             collected_at=(
                 datetime.fromisoformat(data["collected_at"])
                 if data.get("collected_at")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             expires_at=(
                 datetime.fromisoformat(data["expires_at"])
@@ -280,17 +280,17 @@ class ConsentRecord:
     def is_valid(self) -> bool:
         if self.status != ConsentStatus.GRANTED:
             return False
-        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
+        if self.expires_at and datetime.now(UTC) > self.expires_at:
             return False
         return True
 
     def grant(self) -> None:
         self.status = ConsentStatus.GRANTED
-        self.granted_at = datetime.now(timezone.utc)
+        self.granted_at = datetime.now(UTC)
 
     def revoke(self) -> None:
         self.status = ConsentStatus.REVOKED
-        self.revoked_at = datetime.now(timezone.utc)
+        self.revoked_at = datetime.now(UTC)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -350,7 +350,7 @@ class DeletionRequest:
     requested_by: str = ""
     status: DeletionStatus = DeletionStatus.PENDING
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     approved_at: datetime | None = None
     executed_at: datetime | None = None
@@ -363,7 +363,7 @@ class DeletionRequest:
             return False
         if self.status == DeletionStatus.EXECUTED:
             return False
-        return datetime.now(timezone.utc) > self.deadline_at
+        return datetime.now(UTC) > self.deadline_at
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -390,7 +390,7 @@ class DeletionRequest:
             created_at=(
                 datetime.fromisoformat(data["created_at"])
                 if data.get("created_at")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             approved_at=(
                 datetime.fromisoformat(data["approved_at"])
@@ -419,7 +419,7 @@ class SubjectRequest:
     status: RequestStatus = RequestStatus.PENDING
     description: str = ""
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     deadline_at: datetime | None = None
     completed_at: datetime | None = None
@@ -433,7 +433,7 @@ class SubjectRequest:
             return False
         if self.status == RequestStatus.COMPLETED:
             return False
-        return datetime.now(timezone.utc) > self.deadline_at
+        return datetime.now(UTC) > self.deadline_at
 
     @property
     def is_open(self) -> bool:
@@ -441,13 +441,13 @@ class SubjectRequest:
 
     def complete(self, summary: str = "", handler: str = "") -> None:
         self.status = RequestStatus.COMPLETED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
         self.response_summary = summary
         self.handled_by = handler
 
     def reject(self, reason: str = "", handler: str = "") -> None:
         self.status = RequestStatus.REJECTED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
         self.response_summary = reason
         self.handled_by = handler
 
@@ -479,7 +479,7 @@ class SubjectRequest:
             created_at=(
                 datetime.fromisoformat(data["created_at"])
                 if data.get("created_at")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             deadline_at=(
                 datetime.fromisoformat(data["deadline_at"])
@@ -507,7 +507,7 @@ class TreatmentRecord:
     subject_id: str = ""
     operator: str = ""
     timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     details: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -539,7 +539,7 @@ class TreatmentRecord:
             timestamp=(
                 datetime.fromisoformat(data["timestamp"])
                 if data.get("timestamp")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             details=data.get("details", ""),
             metadata=data.get("metadata", {}),
@@ -554,7 +554,7 @@ class AnonymizationRecord:
     data_type: PersonalDataType = PersonalDataType.IMAGE
     method: AnonymizationMethod = AnonymizationMethod.BLUR
     applied_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     reversible: bool = False
     input_ref: str = ""
@@ -586,7 +586,7 @@ class AnonymizationRecord:
             applied_at=(
                 datetime.fromisoformat(data["applied_at"])
                 if data.get("applied_at")
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             reversible=data.get("reversible", False),
             input_ref=data.get("input_ref", ""),

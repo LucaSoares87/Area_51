@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from jose import JWTError, jwt
 
@@ -10,9 +9,9 @@ from src.auth.models import TokenPayload
 def create_access_token(
     subject: str,
     role: str,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire = now + (
         expires_delta
         or timedelta(minutes=auth_settings.access_token_expire_minutes)
@@ -32,7 +31,7 @@ def create_access_token(
 
 
 def create_refresh_token(subject: str, role: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire = now + timedelta(days=auth_settings.refresh_token_expire_days)
     payload = {
         "sub": subject,
@@ -48,7 +47,7 @@ def create_refresh_token(subject: str, role: str) -> str:
     )
 
 
-def decode_token(token: str) -> Optional[TokenPayload]:
+def decode_token(token: str) -> TokenPayload | None:
     try:
         data = jwt.decode(
             token,

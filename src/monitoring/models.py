@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,7 +35,7 @@ class Alert:
     source: str = ""
     status: AlertStatus = AlertStatus.OPEN
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -63,7 +63,7 @@ class PredictionRecord:
     true_class: str | None = None
     source: str = "inference"
     timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -80,13 +80,13 @@ class PredictionRecord:
 
 @dataclass
 class DriftReport:
-    psi: Optional[float] = None
+    psi: float | None = None
     threshold: float = 0.2
     drifted: bool = False
     message: str = ""
     details: dict[str, Any] = field(default_factory=dict)
     analyzed_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
 
     @property
@@ -142,7 +142,7 @@ class HealthStatus(BaseModel):
 class DriftReportSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    psi: Optional[float] = None
+    psi: float | None = None
     threshold: float
     drifted: bool
     status: str = ""
@@ -155,5 +155,5 @@ class ExportedMetrics(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     aggregated: dict[str, Any] = {}
-    drift: Optional[DriftReportSchema] = None
+    drift: DriftReportSchema | None = None
     exported_at: datetime

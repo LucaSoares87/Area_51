@@ -1,5 +1,3 @@
-python3 << 'PYEOF'
-content = '''\
 """
 Area 51 - Identificacao Aerea
 Ponto de entrada principal da aplicacao FastAPI.
@@ -12,17 +10,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.auth.router import router as auth_router
-from src.detect.router import router as detect_router
 from src.detect.config import detect_settings
+from src.detect.router import router as detect_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("=" * 50)
-    print("  Area 51 - Identificacao Aerea")
-    print(f"  Mock inference : {detect_settings.mock_inference}")
-    print(f"  Confidence     : {detect_settings.confidence_threshold}")
-    print(f"  Max image size : {detect_settings.max_image_size_mb} MB")
+    print("Area 51 - Identificacao Aerea")
+    print(f"Mock inference : {detect_settings.mock_inference}")
+    print(f"Confidence     : {detect_settings.confidence_threshold}")
+    print(f"Max image size : {detect_settings.max_image_size_mb} MB")
     print("=" * 50)
 
     detect_settings.uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -81,9 +79,18 @@ async def root():
         "docs": "/docs",
         "health": "/health",
     }
-'''
 
-with open("src/main.py", "w") as f:
-    f.write(content)
-print("src/main.py criado com sucesso")
-PYEOF
+
+def main() -> None:
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+    )
+
+
+if __name__ == "__main__":
+    main()

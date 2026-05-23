@@ -2,11 +2,9 @@
 
 import csv
 import json
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
-
 
 METADATA_FIELDS = [
     "tile_name", "source_image", "x", "y",
@@ -23,7 +21,7 @@ class TileRecord:
     tile_size: int
     overlap: int
     timestamp: str
-    label: Optional[str] = None
+    label: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -65,7 +63,7 @@ class TileMetadata:
     def load_csv(self) -> list[dict]:
         if not self.csv_path.exists():
             return []
-        with open(self.csv_path, "r", encoding="utf-8") as f:
+        with open(self.csv_path, encoding="utf-8") as f:
             return list(csv.DictReader(f))
 
     def update_label(self, tile_name: str, label: str) -> bool:
@@ -87,4 +85,4 @@ class TileMetadata:
 
     @staticmethod
     def now_iso() -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()

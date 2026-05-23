@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class RateLimiter:
@@ -9,7 +9,7 @@ class RateLimiter:
         self._requests: dict[str, list[datetime]] = {}
 
     def is_allowed(self, key: str) -> bool:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if key not in self._requests:
             self._requests[key] = []
         self._requests[key] = [
@@ -22,7 +22,7 @@ class RateLimiter:
         return True
 
     def remaining(self, key: str) -> int:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if key not in self._requests:
             return self.max_requests
         active = [

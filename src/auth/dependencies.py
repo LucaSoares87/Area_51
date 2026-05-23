@@ -1,12 +1,11 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.auth.config import auth_settings
-from src.auth.models import Role, User
-from src.auth.tokens import decode_token
-from src.auth.store import user_store
 from src.auth.api_key_store import api_key_store
+from src.auth.models import Role, User
 from src.auth.rate_limiter import RateLimiter
+from src.auth.store import user_store
+from src.auth.tokens import decode_token
 
 bearer_scheme = HTTPBearer()
 rate_limiter = RateLimiter()

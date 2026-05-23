@@ -6,9 +6,9 @@ from src.auth.api_key_store import ApiKeyStore
 from src.auth.models import (
     ApiKey,
     AuthResult,
-    Role,
     KeyStatus,
     RateLimitEntry,
+    Role,
     TokenType,
 )
 

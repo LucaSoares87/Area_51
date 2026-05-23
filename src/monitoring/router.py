@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.auth.dependencies import get_current_user, require_analyst, require_admin
+from src.auth.dependencies import get_current_user, require_admin, require_analyst
 from src.auth.models import User
-from src.monitoring.config import monitoring_settings
-from src.monitoring.prediction_logger import PredictionLogger
-from src.monitoring.drift_detector import DriftDetector
 from src.monitoring.alert_manager import AlertManager
+from src.monitoring.config import monitoring_settings
+from src.monitoring.drift_detector import DriftDetector
 from src.monitoring.health_checker import HealthChecker
 from src.monitoring.metrics_exporter import MetricsExporter
-from src.monitoring.models import AlertSeverity, HealthStatus, ExportedMetrics
+from src.monitoring.models import AlertSeverity, ExportedMetrics, HealthStatus
+from src.monitoring.prediction_logger import PredictionLogger
 
 router = APIRouter(prefix="/api/v1/monitoring", tags=["monitoring"])
 

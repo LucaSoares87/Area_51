@@ -1,12 +1,11 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from src.monitoring.config import monitoring_settings
-from src.monitoring.prediction_logger import PredictionLogger
 from src.monitoring.drift_detector import DriftDetector
 from src.monitoring.models import DriftReportSchema, ExportedMetrics
+from src.monitoring.prediction_logger import PredictionLogger
 
 
 class MetricsExporter:
@@ -42,7 +41,7 @@ class MetricsExporter:
         exported = ExportedMetrics(
             aggregated=aggregated,
             drift=drift_schema,
-            exported_at=datetime.now(timezone.utc),
+            exported_at=datetime.now(UTC),
         )
 
         self._save(exported)

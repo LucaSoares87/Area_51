@@ -1,6 +1,5 @@
 import json
 import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -84,7 +83,7 @@ class PredictionLogger:
             return []
 
         records: list[dict[str, Any]] = []
-        with open(self._filepath, "r", encoding="utf-8") as f:
+        with open(self._filepath, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:

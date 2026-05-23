@@ -4,11 +4,10 @@ Gerenciamento de API keys para autenticacao do sistema.
 
 import hashlib
 import secrets
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
-from src.auth.models import ApiKey, Role, KeyStatus
+from src.auth.models import ApiKey, KeyStatus, Role
 
 
 class ApiKeyStore:
@@ -74,7 +73,7 @@ class ApiKeyStore:
         if not api_key.is_usable:
             return None
 
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
         return api_key
 
     def revoke(self, key_id: str, owner: str) -> bool:

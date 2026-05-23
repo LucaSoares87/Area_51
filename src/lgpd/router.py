@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.auth.dependencies import get_current_user, require_admin
 from src.auth.models import User
-from src.lgpd.config import lgpd_settings
 from src.lgpd.anonymizer import Anonymizer
 from src.lgpd.audit_logger import AuditLogger
+from src.lgpd.config import lgpd_settings
 from src.lgpd.consent_manager import ConsentManager
 from src.lgpd.data_deletion import DataDeletionService
-from src.lgpd.models import ConsentStatus, DeletionStatus
+from src.lgpd.models import DeletionStatus
 
 router = APIRouter(prefix="/api/v1/lgpd", tags=["lgpd"])
 

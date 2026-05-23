@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from src.monitoring.config import monitoring_settings
 from src.detect.config import detect_settings
+from src.monitoring.config import monitoring_settings
 from src.monitoring.models import ComponentHealth, ComponentHealthSchema, HealthStatus
 
 
@@ -31,7 +31,7 @@ class HealthChecker:
                 )
                 for c in components
             ],
-            checked_at=datetime.now(timezone.utc),
+            checked_at=datetime.now(UTC),
         )
 
     def _check_models(self) -> ComponentHealth:

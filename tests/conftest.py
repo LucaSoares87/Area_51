@@ -2,10 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.app import create_app
-from src.auth.config import auth_settings
+from src.auth.models import Role
 from src.auth.password import hash_password
 from src.auth.store import user_store
-from src.auth.models import Role
 from src.auth.tokens import create_access_token
 
 

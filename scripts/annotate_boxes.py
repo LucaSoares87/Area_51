@@ -3,7 +3,6 @@ Abre a imagem no Windows e pede coordenadas no terminal.
 Para uso futuro - recomendamos LabelImg para anotação visual.
 """
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -22,14 +21,14 @@ if total == 0:
     sys.exit(0)
 
 print(f"\n{'='*60}")
-print(f"  Anotação de Bounding Boxes")
+print("  Anotação de Bounding Boxes")
 print(f"  Tiles positivos: {total}")
 print(f"{'='*60}")
-print(f"\n  RECOMENDAÇÃO: Use o LabelImg para anotar visualmente!")
-print(f"  Instale com: pip install labelimg")
-print(f"  Rode com:    labelimg data/bootstrap/positives/")
-print(f"\n  Este script apenas copia as imagens para a pasta YOLO.")
-print(f"  As anotações (.txt) devem ser feitas no LabelImg.\n")
+print("\n  RECOMENDAÇÃO: Use o LabelImg para anotar visualmente!")
+print("  Instale com: pip install labelimg")
+print("  Rode com:    labelimg data/bootstrap/positives/")
+print("\n  Este script apenas copia as imagens para a pasta YOLO.")
+print("  As anotações (.txt) devem ser feitas no LabelImg.\n")
 
 resp = input("  Copiar imagens positivas para data/yolo/images/train? (s/n): ").strip()
 

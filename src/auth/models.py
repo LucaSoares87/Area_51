@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 from uuid import uuid4
@@ -34,7 +34,7 @@ class User:
     hashed_password: str = ""
     role: Role = Role.VIEWER
     is_active: bool = True
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -61,7 +61,7 @@ class User:
             created_at=(
                 datetime.fromisoformat(data["created_at"])
                 if "created_at" in data
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
         )
 
@@ -72,7 +72,7 @@ class ApiKey:
     name: str = ""
     role: Role = Role.VIEWER
     status: KeyStatus = KeyStatus.ACTIVE
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     expires_at: datetime | None = None
     last_used_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -81,7 +81,7 @@ class ApiKey:
     def is_expired(self) -> bool:
         if self.expires_at is None:
             return False
-        return datetime.now(timezone.utc) > self.expires_at
+        return datetime.now(UTC) > self.expires_at
 
     @property
     def is_usable(self) -> bool:
@@ -109,7 +109,7 @@ class ApiKey:
             created_at=(
                 datetime.fromisoformat(data["created_at"])
                 if "created_at" in data
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             ),
             expires_at=(
                 datetime.fromisoformat(data["expires_at"])
@@ -135,7 +135,7 @@ class AuthResult:
 @dataclass
 class RateLimitEntry:
     key_hash: str = ""
-    window_start: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    window_start: datetime = field(default_factory=lambda: datetime.now(UTC))
     request_count: int = 0
     max_requests: int = 100
     window_seconds: int = 3600
@@ -148,12 +148,12 @@ class RateLimitEntry:
 
     @property
     def is_window_expired(self) -> bool:
-        elapsed = (datetime.now(timezone.utc) - self.window_start).total_seconds()
+        elapsed = (datetime.now(UTC) - self.window_start).total_seconds()
         return elapsed >= self.window_seconds
 
     def increment(self) -> None:
         if self.is_window_expired:
-            self.window_start = datetime.now(timezone.utc)
+            self.window_start = datetime.now(UTC)
             self.request_count = 0
         self.request_count += 1
 

@@ -1,12 +1,14 @@
-"""Ferramenta de rotulação rápida de tiles via teclado."""
+"""Ferramenta de rotulacao rapida de tiles via teclado."""
 
 import shutil
-import cv2
 from pathlib import Path
 
-from src.detect.config import detect_settings
-from .metadata import TileMetadata
+import cv2
+import numpy as np
 
+from src.detect.config import detect_settings
+
+from .metadata import TileMetadata
 
 LABEL_MAP = {
     ord("1"): "positives",
@@ -25,7 +27,7 @@ class TileLabeler:
         tiles_dir: str | Path,
         bootstrap_dir: str | Path = "data/bootstrap",
         copy_files: bool = True,
-    ):
+    ) -> None:
         self.tiles_dir = Path(tiles_dir)
         self.bootstrap_dir = Path(bootstrap_dir)
         self.copy_files = copy_files
@@ -36,37 +38,68 @@ class TileLabeler:
 
     def _get_unlabeled_tiles(self) -> list[Path]:
         records = self.metadata.load_csv()
-        labeled = {r["tile_name"] for r in records if r.get("label")}
+        labeled = {record["tile_name"] for record in records if record.get("label")}
 
-        tiles = []
-        for ext in detect_settings.allowed_extensions:
-            tiles.extend(self.tiles_dir.glob(f"tile_*{ext}"))
+        tiles: list[Path] = []
 
-        return sorted(t for t in tiles if t.name not in labeled)
+        for extension in detect_settings.allowed_extensions:
+            tiles.extend(self.tiles_dir.glob(f"tile_*{extension}"))
 
-    def _render_hud(self, img: "np.ndarray", tile_name: str, idx: int, total: int):
+        return sorted(tile for tile in tiles if tile.name not in labeled)
+
+    def _render_hud(
+        self,
+        img: np.ndarray,
+        tile_name: str,
+        idx: int,
+        total: int,
+    ) -> np.ndarray:
         display = img.copy()
-        h, w = display.shape[:2]
+        height, width = display.shape[:2]
 
-        scale = max(1, 512 // max(h, w))
+        scale = max(1, 512 // max(height, width))
+
         if scale > 1:
             display = cv2.resize(
-                display, (w * scale, h * scale),
+                display,
+                (width * scale, height * scale),
                 interpolation=cv2.INTER_NEAREST,
             )
 
-        dh, dw = display.shape[:2]
+        display_height, display_width = display.shape[:2]
 
-        cv2.rectangle(display, (0, 0), (dw, 36), (30, 30, 30), -1)
+        cv2.rectangle(
+            display,
+            (0, 0),
+            (display_width, 36),
+            (30, 30, 30),
+            -1,
+        )
         cv2.putText(
-            display, f"[{idx + 1}/{total}] {tile_name}",
-            (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1,
+            display,
+            f"[{idx + 1}/{total}] {tile_name}",
+            (8, 24),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (255, 255, 255),
+            1,
         )
 
-        cv2.rectangle(display, (0, dh - 32), (dw, dh), (30, 30, 30), -1)
+        cv2.rectangle(
+            display,
+            (0, display_height - 32),
+            (display_width, display_height),
+            (30, 30, 30),
+            -1,
+        )
         cv2.putText(
-            display, "1=POSITIVO  0=NEGATIVO  2=INCERTO  ESC=SAIR",
-            (8, dh - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (200, 200, 200), 1,
+            display,
+            "1=POSITIVO  0=NEGATIVO  2=INCERTO  ESC=SAIR",
+            (8, display_height - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.38,
+            (200, 200, 200),
+            1,
         )
 
         return display
@@ -76,26 +109,30 @@ class TileLabeler:
             tiles = self._get_unlabeled_tiles()
         else:
             tiles = []
-            for ext in detect_settings.allowed_extensions:
-                tiles.extend(self.tiles_dir.glob(f"tile_*{ext}"))
+
+            for extension in detect_settings.allowed_extensions:
+                tiles.extend(self.tiles_dir.glob(f"tile_*{extension}"))
+
             tiles = sorted(tiles)
 
         total = len(tiles)
+
         if total == 0:
             print("Todos os tiles ja foram rotulados.")
             return 0
 
         print(f"Tiles para rotular: {total}")
-        print("  1 = positivo (telhado) | 0 = negativo | 2 = incerto | ESC = sair\n")
+        print("1 = positivo (telhado) | 0 = negativo | 2 = incerto | ESC = sair\n")
 
         labeled_count = 0
 
-        for i, tile_path in enumerate(tiles):
-            img = cv2.imread(str(tile_path))
-            if img is None:
+        for index, tile_path in enumerate(tiles):
+            image = cv2.imread(str(tile_path))
+
+            if image is None:
                 continue
 
-            display = self._render_hud(img, tile_path.name, i, total)
+            display = self._render_hud(image, tile_path.name, index, total)
             cv2.imshow(WINDOW_NAME, display)
 
             while True:
@@ -110,28 +147,32 @@ class TileLabeler:
                     label = LABEL_MAP[key]
                     self._apply_label(tile_path, label)
                     labeled_count += 1
-                    print(f"  {tile_path.name} -> {label}")
+                    print(f"{tile_path.name} -> {label}")
                     break
 
         cv2.destroyAllWindows()
         print(f"\nSessao completa. {labeled_count} tiles rotulados.")
+
         return labeled_count
 
-    def _apply_label(self, tile_path: Path, label: str):
-        dest = self.bootstrap_dir / label / tile_path.name
+    def _apply_label(self, tile_path: Path, label: str) -> None:
+        destination = self.bootstrap_dir / label / tile_path.name
 
         if self.copy_files:
-            shutil.copy2(tile_path, dest)
+            shutil.copy2(tile_path, destination)
         else:
-            shutil.move(str(tile_path), dest)
+            shutil.move(str(tile_path), destination)
 
         self.metadata.update_label(tile_path.name, label)
 
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, int]:
         result = {}
+
         for label in LABEL_MAP.values():
             label_dir = self.bootstrap_dir / label
             count = len(list(label_dir.glob("*"))) if label_dir.exists() else 0
             result[label] = count
+
         result["total"] = sum(result.values())
+
         return result

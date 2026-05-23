@@ -86,7 +86,7 @@ def main() -> None:
 
     if labeled > 0:
         stats = labeler.stats()
-        print(f"\nResultado final:")
+        print("\nResultado final:")
         print(f"  positives:  {stats.get('positives', 0)}")
         print(f"  negatives:  {stats.get('negatives', 0)}")
         print(f"  uncertain:  {stats.get('uncertain', 0)}")

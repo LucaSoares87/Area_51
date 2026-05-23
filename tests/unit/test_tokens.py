@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from src.auth.config import auth_settings
 from src.auth.tokens import create_access_token, create_refresh_token, decode_token
 
 

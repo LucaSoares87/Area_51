@@ -1,7 +1,6 @@
 import hashlib
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from PIL import Image
 
@@ -89,7 +88,7 @@ class ImageProcessor:
         self,
         file_path: Path,
         bbox: BBox,
-        output_dir: Optional[Path] = None,
+        output_dir: Path | None = None,
     ) -> Path:
         output_dir = output_dir or detect_settings.results_dir
         output_dir.mkdir(parents=True, exist_ok=True)

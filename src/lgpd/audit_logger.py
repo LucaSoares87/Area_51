@@ -1,7 +1,6 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from threading import Lock
-from typing import Optional
 
 from src.lgpd.config import lgpd_settings
 from src.lgpd.models import AuditEntry
@@ -28,7 +27,7 @@ class AuditLogger:
             resource=resource,
             detail=detail,
             ip_address=ip_address,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
         with self._lock:
@@ -39,8 +38,8 @@ class AuditLogger:
     def get_entries(
         self,
         limit: int = 100,
-        user: Optional[str] = None,
-        action: Optional[str] = None,
+        user: str | None = None,
+        action: str | None = None,
     ) -> list[dict]:
         with self._lock:
             entries = list(self._entries)
@@ -54,7 +53,7 @@ class AuditLogger:
         return [e.to_dict() for e in entries[:limit]]
 
     def purge_expired(self) -> int:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=self.retention_days)
+        cutoff = datetime.now(UTC) - timedelta(days=self.retention_days)
 
         with self._lock:
             before = len(self._entries)

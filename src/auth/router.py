@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from src.auth.api_key_store import api_key_store
 from src.auth.config import auth_settings
-from src.auth.dependencies import get_current_user, require_admin, rate_limiter
+from src.auth.dependencies import get_current_user, require_admin
 from src.auth.models import (
     APIKeyCreate,
     APIKeyResponse,
@@ -16,7 +16,6 @@ from src.auth.models import (
 )
 from src.auth.password import hash_password, validate_password_strength, verify_password
 from src.auth.store import user_store
-from src.auth.api_key_store import api_key_store
 from src.auth.tokens import create_access_token, create_refresh_token, decode_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])

@@ -23,7 +23,7 @@ if total == 0:
     sys.exit(0)
 
 print(f"\n  Tiles para rotular: {total}")
-print(f"  1 = positivo | 0 = negativo | 2 = incerto | q = sair\n")
+print("  1 = positivo | 0 = negativo | 2 = incerto | q = sair\n")
 
 count = 0
 for i, tile in enumerate(tiles):

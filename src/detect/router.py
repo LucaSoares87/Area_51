@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from typing import Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from src.auth.dependencies import get_current_user, require_analyst
 from src.auth.models import User
-from src.detect.config import detect_settings
 from src.detect.analysis_service import AnalysisService
+from src.detect.config import detect_settings
 from src.detect.models import AnalysisResult
 
 router = APIRouter(prefix="/api/v1/detect", tags=["detection"])

@@ -3,7 +3,7 @@ Modelos de dados do modulo de deteccao aerea.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -87,11 +87,21 @@ class BoundingBox:
         return inter_area / union_area
 
     def to_dict(self) -> dict[str, float]:
-        return {"x": self.x, "y": self.y, "width": self.width, "height": self.height}
+        return {
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height,
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, float]) -> "BoundingBox":
-        return cls(x=data["x"], y=data["y"], width=data["width"], height=data["height"])
+        return cls(
+            x=data["x"],
+            y=data["y"],
+            width=data["width"],
+            height=data["height"],
+        )
 
 
 @dataclass
@@ -131,7 +141,7 @@ class Detection:
     position: GeoPosition | None = None
     source: SourceType = SourceType.CAMERA
     status: DetectionStatus = DetectionStatus.RAW
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     frame_index: int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -164,10 +174,18 @@ class Detection:
             object_class=ObjectClass(data.get("object_class", "unknown")),
             confidence=data.get("confidence", 0.0),
             bbox=BoundingBox.from_dict(data["bbox"]) if data.get("bbox") else None,
-            position=GeoPosition.from_dict(data["position"]) if data.get("position") else None,
+            position=(
+                GeoPosition.from_dict(data["position"])
+                if data.get("position")
+                else None
+            ),
             source=SourceType(data.get("source", "camera")),
             status=DetectionStatus(data.get("status", "raw")),
-            timestamp=datetime.fromisoformat(data["timestamp"]) if data.get("timestamp") else datetime.now(timezone.utc),
+            timestamp=(
+                datetime.fromisoformat(data["timestamp"])
+                if data.get("timestamp")
+                else datetime.now(UTC)
+            ),
             frame_index=data.get("frame_index"),
             metadata=data.get("metadata", {}),
         )
@@ -178,8 +196,8 @@ class TrackedObject:
     track_id: str = field(default_factory=lambda: uuid4().hex)
     object_class: ObjectClass = ObjectClass.UNKNOWN
     detections: list[Detection] = field(default_factory=list)
-    first_seen: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    last_seen: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    first_seen: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_seen: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: DetectionStatus = DetectionStatus.TRACKING
     severity: Severity = Severity.LOW
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -192,7 +210,10 @@ class TrackedObject:
     def avg_confidence(self) -> float:
         if not self.detections:
             return 0.0
-        return sum(d.confidence for d in self.detections) / len(self.detections)
+
+        return sum(detection.confidence for detection in self.detections) / len(
+            self.detections,
+        )
 
     @property
     def last_detection(self) -> Detection | None:
@@ -202,9 +223,11 @@ class TrackedObject:
     def last_position(self) -> GeoPosition | None:
         if not self.detections:
             return None
-        for det in reversed(self.detections):
-            if det.position is not None:
-                return det.position
+
+        for detection in reversed(self.detections):
+            if detection.position is not None:
+                return detection.position
+
         return None
 
     @property
@@ -214,6 +237,7 @@ class TrackedObject:
     def add_detection(self, detection: Detection) -> None:
         self.detections.append(detection)
         self.last_seen = detection.timestamp
+
         if detection.confidence > 0.5 and detection.object_class != ObjectClass.UNKNOWN:
             self.object_class = detection.object_class
 
@@ -221,7 +245,7 @@ class TrackedObject:
         return {
             "track_id": self.track_id,
             "object_class": self.object_class.value,
-            "detections": [d.to_dict() for d in self.detections],
+            "detections": [detection.to_dict() for detection in self.detections],
             "first_seen": self.first_seen.isoformat(),
             "last_seen": self.last_seen.isoformat(),
             "status": self.status.value,
@@ -236,14 +260,24 @@ class TrackedObject:
         obj = cls(
             track_id=data.get("track_id", uuid4().hex),
             object_class=ObjectClass(data.get("object_class", "unknown")),
-            first_seen=datetime.fromisoformat(data["first_seen"]) if data.get("first_seen") else datetime.now(timezone.utc),
-            last_seen=datetime.fromisoformat(data["last_seen"]) if data.get("last_seen") else datetime.now(timezone.utc),
+            first_seen=(
+                datetime.fromisoformat(data["first_seen"])
+                if data.get("first_seen")
+                else datetime.now(UTC)
+            ),
+            last_seen=(
+                datetime.fromisoformat(data["last_seen"])
+                if data.get("last_seen")
+                else datetime.now(UTC)
+            ),
             status=DetectionStatus(data.get("status", "tracking")),
             severity=Severity(data.get("severity", "low")),
             metadata=data.get("metadata", {}),
         )
-        for d in data.get("detections", []):
-            obj.detections.append(Detection.from_dict(d))
+
+        for detection_data in data.get("detections", []):
+            obj.detections.append(Detection.from_dict(detection_data))
+
         return obj
 
 
@@ -256,7 +290,7 @@ class InferenceResult:
     inference_time_ms: float = 0.0
     frame_width: int = 0
     frame_height: int = 0
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -265,24 +299,36 @@ class InferenceResult:
 
     @property
     def confirmed_detections(self) -> list[Detection]:
-        return [d for d in self.detections if d.is_confirmed]
+        return [detection for detection in self.detections if detection.is_confirmed]
 
     @property
     def high_confidence_detections(self) -> list[Detection]:
-        return [d for d in self.detections if d.is_high_confidence]
+        return [
+            detection
+            for detection in self.detections
+            if detection.is_high_confidence
+        ]
 
     def filter_by_class(self, obj_class: ObjectClass) -> list[Detection]:
-        return [d for d in self.detections if d.object_class == obj_class]
+        return [
+            detection
+            for detection in self.detections
+            if detection.object_class == obj_class
+        ]
 
     def filter_by_min_confidence(self, threshold: float) -> list[Detection]:
-        return [d for d in self.detections if d.confidence >= threshold]
+        return [
+            detection
+            for detection in self.detections
+            if detection.confidence >= threshold
+        ]
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "request_id": self.request_id,
             "model_name": self.model_name,
             "model_version": self.model_version,
-            "detections": [d.to_dict() for d in self.detections],
+            "detections": [detection.to_dict() for detection in self.detections],
             "inference_time_ms": self.inference_time_ms,
             "frame_width": self.frame_width,
             "frame_height": self.frame_height,
@@ -300,11 +346,17 @@ class InferenceResult:
             inference_time_ms=data.get("inference_time_ms", 0.0),
             frame_width=data.get("frame_width", 0),
             frame_height=data.get("frame_height", 0),
-            timestamp=datetime.fromisoformat(data["timestamp"]) if data.get("timestamp") else datetime.now(timezone.utc),
+            timestamp=(
+                datetime.fromisoformat(data["timestamp"])
+                if data.get("timestamp")
+                else datetime.now(UTC)
+            ),
             metadata=data.get("metadata", {}),
         )
-        for d in data.get("detections", []):
-            result.detections.append(Detection.from_dict(d))
+
+        for detection_data in data.get("detections", []):
+            result.detections.append(Detection.from_dict(detection_data))
+
         return result
 
 
@@ -316,11 +368,21 @@ class BBox:
     height: int = 0
 
     def to_dict(self) -> dict[str, int]:
-        return {"x": self.x, "y": self.y, "width": self.width, "height": self.height}
+        return {
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height,
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, int]) -> "BBox":
-        return cls(x=data["x"], y=data["y"], width=data["width"], height=data["height"])
+        return cls(
+            x=data["x"],
+            y=data["y"],
+            width=data["width"],
+            height=data["height"],
+        )
 
 
 @dataclass
@@ -377,6 +439,8 @@ class Tile:
             bbox=BBox.from_dict(data["bbox"]) if data.get("bbox") else BBox(),
             file_path=Path(data.get("file_path", "")),
         )
+
+
 @dataclass
 class CrossRefResult:
     detection_id: str = ""
@@ -404,6 +468,7 @@ class CrossRefResult:
             error=data.get("error", ""),
         )
 
+
 class AnalysisStatus(str, Enum):
     PENDING = "pending"
     PROCESSING = "processing"
@@ -422,7 +487,7 @@ class AnalysisResult:
     detections: list[Detection] = field(default_factory=list)
     cross_references: list[CrossRefResult] | None = None
     total_detections: int = 0
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -432,8 +497,12 @@ class AnalysisResult:
             "source_file": self.source_file,
             "errors": self.errors,
             "metadata": self.metadata,
-            "detections": [d.to_dict() for d in self.detections],
-            "cross_references": [c.to_dict() for c in self.cross_references] if self.cross_references else None,
+            "detections": [detection.to_dict() for detection in self.detections],
+            "cross_references": (
+                [cross_ref.to_dict() for cross_ref in self.cross_references]
+                if self.cross_references
+                else None
+            ),
             "total_detections": self.total_detections,
             "created_at": self.created_at.isoformat(),
         }
@@ -447,8 +516,22 @@ class AnalysisResult:
             source_file=data.get("source_file", ""),
             errors=data.get("errors", []),
             metadata=data.get("metadata"),
-            detections=[Detection.from_dict(d) for d in data.get("detections", [])],
-            cross_references=[CrossRefResult.from_dict(c) for c in data["cross_references"]] if data.get("cross_references") else None,
+            detections=[
+                Detection.from_dict(detection)
+                for detection in data.get("detections", [])
+            ],
+            cross_references=(
+                [
+                    CrossRefResult.from_dict(cross_reference)
+                    for cross_reference in data["cross_references"]
+                ]
+                if data.get("cross_references")
+                else None
+            ),
             total_detections=data.get("total_detections", 0),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.now(timezone.utc),
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if data.get("created_at")
+                else datetime.now(UTC)
+            ),
         )

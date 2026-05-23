@@ -1,5 +1,4 @@
 import math
-from typing import Optional
 
 from src.monitoring.config import monitoring_settings
 from src.monitoring.models import DriftReport
@@ -15,7 +14,7 @@ class DriftDetector:
         reference: list[float],
         current: list[float],
         bins: int = 10,
-    ) -> Optional[float]:
+    ) -> float | None:
         if len(reference) < self.min_samples or len(current) < self.min_samples:
             return None
 

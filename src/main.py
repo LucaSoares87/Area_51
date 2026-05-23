@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.auth.router import router as auth_router
-from src.detect.router import router as detect_router
 from src.detect.config import detect_settings
+from src.detect.router import router as detect_router
 
 
 @asynccontextmanager

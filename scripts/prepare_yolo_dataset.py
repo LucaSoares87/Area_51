@@ -41,7 +41,7 @@ for name in val_set:
     shutil.move(str(lbl_src), str(val_labels / f"{name}.txt"))
     moved += 1
 
-print(f"\n  Dataset organizado!")
+print("\n  Dataset organizado!")
 print(f"  ├── train: {len(train_set)} imagens")
 print(f"  └── val:   {len(val_set)} imagens")
 print(f"\n  Total: {len(annotated)} imagens anotadas")

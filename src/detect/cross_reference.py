@@ -1,5 +1,5 @@
+
 import httpx
-from typing import Optional
 
 from src.detect.config import detect_settings
 from src.detect.models import CrossRefResult, Detection

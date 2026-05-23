@@ -1,12 +1,11 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 from src.detect.config import detect_settings
+from src.detect.cross_reference import CrossReferenceService
 from src.detect.image_processor import ImageProcessor
 from src.detect.inference import InferenceEngine
-from src.detect.cross_reference import CrossReferenceService
 from src.detect.models import AnalysisResult, AnalysisStatus
 
 
@@ -35,7 +34,7 @@ class AnalysisService:
                 requester=requester,
                 source_file=file_path.name,
                 errors=errors,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             self._analyses[analysis_id] = result
             return result
@@ -56,7 +55,7 @@ class AnalysisService:
             detections=detections,
             cross_references=cross_refs,
             total_detections=len(detections),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self._analyses[analysis_id] = result
         return result
@@ -78,12 +77,12 @@ class AnalysisService:
             results.append(result)
         return results
 
-    def get_result(self, analysis_id: str) -> Optional[AnalysisResult]:
+    def get_result(self, analysis_id: str) -> AnalysisResult | None:
         return self._analyses.get(analysis_id)
 
     def list_results(
         self,
-        requester: Optional[str] = None,
+        requester: str | None = None,
         limit: int = 50,
     ) -> list[AnalysisResult]:
         results = list(self._analyses.values())

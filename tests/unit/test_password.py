@@ -1,4 +1,4 @@
-from src.auth.password import hash_password, verify_password, validate_password_strength
+from src.auth.password import hash_password, validate_password_strength, verify_password
 
 
 class TestHashPassword:

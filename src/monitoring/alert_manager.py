@@ -70,7 +70,7 @@ class AlertManager:
             return []
 
         alerts: list[dict[str, Any]] = []
-        with open(self._filepath, "r", encoding="utf-8") as f:
+        with open(self._filepath, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -157,16 +157,14 @@ class AlertManager:
     # ------------------------------------------------------------------
 
     def _persist(self, alert: Alert) -> None:
-        with self._lock:
-            with open(self._filepath, "a", encoding="utf-8") as f:
-                f.write(json.dumps(alert.to_dict(), ensure_ascii=False) + "\n")
+        with self._lock, open(self._filepath, "a", encoding="utf-8") as f:
+            f.write(json.dumps(alert.to_dict(), ensure_ascii=False) + "\n")
 
     def _rewrite_all(self, alerts: list[dict[str, Any]]) -> None:
         """Reescreve todo o arquivo (usado no acknowledge)."""
-        with self._lock:
-            with open(self._filepath, "w", encoding="utf-8") as f:
-                for a in alerts:
-                    f.write(json.dumps(a, ensure_ascii=False) + "\n")
+        with self._lock, open(self._filepath, "w", encoding="utf-8") as f:
+            for a in alerts:
+                f.write(json.dumps(a, ensure_ascii=False) + "\n")
 
     def _notify_handlers(self, alert: Alert) -> None:
         for handler in self._handlers:
