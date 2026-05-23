@@ -6,6 +6,7 @@ from src.aerial_housing_detection.detection.image_preprocessor import ImagePrepr
 from src.aerial_housing_detection.detection.post_processor import DetectionPostProcessor
 from src.aerial_housing_detection.detection.roof_detector import RoofDetector
 from src.aerial_housing_detection.domain.detection import DetectionResult
+from src.aerial_housing_detection.domain.exceptions import PipelineExecutionError
 from src.aerial_housing_detection.domain.report import PipelineResult
 from src.aerial_housing_detection.pipeline.pipeline_state import PipelineState
 from src.aerial_housing_detection.pipeline.step_registry import (
@@ -60,6 +61,9 @@ class DetectionPipeline:
 
         Returns:
             Detection result.
+
+        Raises:
+            PipelineExecutionError: If the pipeline cannot complete.
         """
         state = PipelineState(
             analysis_id=uuid4().hex,
@@ -92,6 +96,8 @@ class DetectionPipeline:
                 analysis_id=state.analysis_id,
                 roof_count=len(state.final_detections),
             )
+            return state.to_detection_result()
+
         except Exception as exc:
             state.mark_failed(str(exc))
             logger.error(
@@ -99,8 +105,7 @@ class DetectionPipeline:
                 analysis_id=state.analysis_id,
                 error=str(exc),
             )
-
-        return state.to_detection_result()
+            raise PipelineExecutionError(str(exc)) from exc
 
     def run(self, image_path: Path) -> PipelineResult:
         """Run detection and generate output files.
@@ -110,6 +115,9 @@ class DetectionPipeline:
 
         Returns:
             Pipeline result with generated report paths.
+
+        Raises:
+            PipelineExecutionError: If the pipeline cannot complete.
         """
         detection_result = self.run_detection(image_path)
         csv_report_path = self.report_generator.generate_csv(detection_result)

@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 
+from src.aerial_housing_detection.domain.exceptions import AerialHousingDetectionError
 from src.aerial_housing_detection.pipeline.orchestrator import DetectionPipeline
 
 
@@ -22,8 +23,12 @@ def main() -> None:
     args = parse_args()
     image_path = Path(args.image)
 
-    pipeline = DetectionPipeline()
-    result = pipeline.run(image_path)
+    try:
+        pipeline = DetectionPipeline()
+        result = pipeline.run(image_path)
+    except AerialHousingDetectionError as exc:
+        print(f"error={exc}")
+        raise SystemExit(1) from exc
 
     print(f"analysis_id={result.analysis_id}")
     print(f"estimated_residences={result.estimated_residences}")

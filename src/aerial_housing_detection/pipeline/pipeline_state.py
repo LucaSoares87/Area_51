@@ -7,6 +7,7 @@ from src.aerial_housing_detection.domain.detection import (
     ImageMetadata,
     RoofDetection,
 )
+from src.aerial_housing_detection.domain.exceptions import PipelineExecutionError
 
 
 @dataclass
@@ -45,10 +46,11 @@ class PipelineState:
             Image metadata.
 
         Raises:
-            RuntimeError: If metadata was not produced.
+            PipelineExecutionError: If metadata was not produced.
         """
         if self.image_metadata is None:
-            raise RuntimeError("Pipeline image metadata is not available.")
+            raise PipelineExecutionError("Pipeline image metadata is not available.")
+
         return self.image_metadata
 
     def to_detection_result(self) -> DetectionResult:
@@ -56,6 +58,9 @@ class PipelineState:
 
         Returns:
             Detection result.
+
+        Raises:
+            PipelineExecutionError: If metadata was not produced.
         """
         metadata = self.require_metadata()
 
