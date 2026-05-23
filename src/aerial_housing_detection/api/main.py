@@ -1,0 +1,28 @@
+from fastapi import FastAPI
+
+from config.logging_config import configure_logging
+from config.settings import get_settings
+from src.aerial_housing_detection.api.routes.detection import router as detection_router
+from src.aerial_housing_detection.api.routes.health import router as health_router
+from src.aerial_housing_detection.api.routes.report import router as report_router
+
+
+def create_app() -> FastAPI:
+    """Create FastAPI application."""
+    settings = get_settings()
+    configure_logging()
+
+    app = FastAPI(
+        title="Aerial Housing Detection",
+        description="API para estimativa de residências por imagem aérea.",
+        version=settings.app_version,
+    )
+
+    app.include_router(health_router)
+    app.include_router(detection_router)
+    app.include_router(report_router)
+
+    return app
+
+
+app = create_app()
