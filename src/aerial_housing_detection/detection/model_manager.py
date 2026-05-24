@@ -4,19 +4,17 @@ from config.settings import get_settings
 
 
 class ModelManager:
-    """Manages model paths and future model loading."""
+    """Manages model paths and availability."""
 
     def __init__(self) -> None:
         """Initialize model manager settings."""
         self.settings = get_settings()
 
     def get_primary_detector_path(self) -> Path | None:
-        """Return primary detector path when available.
-
-        Returns:
-            Path to the primary detector model or None.
-        """
+        """Return primary detector path when available."""
         candidates = (
+            self.settings.models_dir / "yolo" / "roof_detector_best.pt",
+            self.settings.models_dir / "yolo" / "roof_detector_last.pt",
             self.settings.models_dir / "roof_detector.pt",
             self.settings.models_dir / "best.pt",
         )
