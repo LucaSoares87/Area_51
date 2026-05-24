@@ -5,3 +5,15 @@ __pycache__/
 .env
 runs/
 *.pt
+# YOLO / ML local artifacts
+runs/
+models/yolo/*.pt
+models/yolo/*.onnx
+models/yolo/*.engine
+models/yolo/*.torchscript
+models/yolo/*.mlmodel
+models/yolo/*.tflite
+models/yolo/*.pb
+models/yolo/*.json
+data/yolo/**/*.cache
+data/yolo/**/_backup*/
