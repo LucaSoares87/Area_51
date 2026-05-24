@@ -1,6 +1,5 @@
-path: /mnt/c/Users/Lucas Soares/Downloads/Area_51/Area_51/data/yolo
+path: C:/Users/Lucas Soares/Downloads/Area_51/Area_51/data/yolo
 train: images/train
 val: images/val
-
 nc: 1
 names: ['telhado']
