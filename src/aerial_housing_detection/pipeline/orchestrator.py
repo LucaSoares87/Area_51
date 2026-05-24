@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from config.logging_config import get_logger
+from src.aerial_housing_detection.bootstrap.bootstrap_filter import BootstrapFilter
 from src.aerial_housing_detection.detection.image_preprocessor import ImagePreprocessor
 from src.aerial_housing_detection.detection.post_processor import DetectionPostProcessor
 from src.aerial_housing_detection.detection.roof_detector import RoofDetector
@@ -31,21 +32,15 @@ class DetectionPipeline:
         post_processor: DetectionPostProcessor | None = None,
         report_generator: ReportGenerator | None = None,
         map_renderer: MapRenderer | None = None,
+        bootstrap_filter: BootstrapFilter | None = None,
     ) -> None:
-        """Initialize pipeline dependencies.
-
-        Args:
-            image_preprocessor: Optional image preprocessor.
-            roof_detector: Optional roof detector.
-            post_processor: Optional detection post processor.
-            report_generator: Optional report generator.
-            map_renderer: Optional map renderer.
-        """
+        """Initialize pipeline dependencies."""
         self.image_preprocessor = image_preprocessor or ImagePreprocessor()
         self.roof_detector = roof_detector or RoofDetector()
         self.post_processor = post_processor or DetectionPostProcessor()
         self.report_generator = report_generator or ReportGenerator()
         self.map_renderer = map_renderer or MapRenderer()
+        self.bootstrap_filter = bootstrap_filter or BootstrapFilter()
         self._last_executions: list[PipelineStepExecution] = []
 
     @property
@@ -54,17 +49,7 @@ class DetectionPipeline:
         return self._last_executions
 
     def run_detection(self, image_path: Path) -> DetectionResult:
-        """Run only the detection stage.
-
-        Args:
-            image_path: Path to aerial image.
-
-        Returns:
-            Detection result.
-
-        Raises:
-            PipelineExecutionError: If the pipeline cannot complete.
-        """
+        """Run only the detection stage."""
         state = PipelineState(
             analysis_id=uuid4().hex,
             image_path=image_path,
@@ -108,17 +93,7 @@ class DetectionPipeline:
             raise PipelineExecutionError(str(exc)) from exc
 
     def run(self, image_path: Path) -> PipelineResult:
-        """Run detection and generate output files.
-
-        Args:
-            image_path: Path to aerial image.
-
-        Returns:
-            Pipeline result with generated report paths.
-
-        Raises:
-            PipelineExecutionError: If the pipeline cannot complete.
-        """
+        """Run detection and generate output files."""
         detection_result = self.run_detection(image_path)
         csv_report_path = self.report_generator.generate_csv(detection_result)
         html_map_path = self.map_renderer.render_html(detection_result)
@@ -142,5 +117,6 @@ class DetectionPipeline:
         state.raw_detections = self.roof_detector.detect(state.image_path, metadata)
 
     def _post_process(self, state: PipelineState) -> None:
-        """Run detection post-processing step."""
-        state.final_detections = self.post_processor.process(state.raw_detections)
+        """Run bootstrap filtering and detection post-processing."""
+        filtered_detections = self.bootstrap_filter.filter(state.raw_detections)
+        state.final_detections = self.post_processor.process(filtered_detections)
