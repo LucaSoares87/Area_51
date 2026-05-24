@@ -37,17 +37,20 @@ class LossDashboardGenerator:
         reference_month: str | None,
     ) -> str:
         template = Template(self._template())
+
         return template.safe_substitute(
             reference_month=reference_month or "Todos os meses",
             total_areas=summary.get("total_areas", 0),
             critical_areas=summary.get("critical_areas", 0),
             high_risk_areas=summary.get("high_risk_areas", 0),
-            estimated_loss_kwh=self._format_number(summary.get("estimated_loss_kwh", 0)),
+            estimated_loss_kwh=self._format_number(
+                summary.get("estimated_loss_kwh", 0),
+            ),
             average_loss_percent=self._format_percent(
-                summary.get("average_loss_percent", 0)
+                summary.get("average_loss_percent", 0),
             ),
             top_priority_score=self._format_number(
-                summary.get("top_priority_score", 0)
+                summary.get("top_priority_score", 0),
             ),
             ranking_rows=self._render_ranking_rows(records),
             map_points=self._render_map_points(records),
@@ -63,16 +66,32 @@ class LossDashboardGenerator:
 
         rows = []
         for position, record in enumerate(records, start=1):
+            transformer_code = self._get_text(record, "transformer_code")
+            neighborhood = self._get_text(record, "neighborhood")
+            city = self._get_text(record, "city")
+            risk_level = self._get_risk_level(record)
+
+            estimated_loss_kwh = self._format_number(
+                record.get("estimated_loss_kwh", 0),
+            )
+            estimated_loss_percent = self._format_percent(
+                record.get("estimated_loss_percent", 0),
+            )
+
             rows.append(
                 f"""
                 <tr>
                     <td>{position}</td>
-                    <td>{record.get("transformer_code", "")}</td>
-                    <td>{record.get("neighborhood", "")}</td>
-                    <td>{record.get("city", "")}</td>
-                    <td>{self._format_number(record.get("estimated_loss_kwh", 0))}</td>
-                    <td>{self._format_percent(record.get("estimated_loss_percent", 0))}</td>
-                    <td><span class="risk risk-{record.get("risk_level", "low")}">{record.get("risk_level", "")}</span></td>
+                    <td>{transformer_code}</td>
+                    <td>{neighborhood}</td>
+                    <td>{city}</td>
+                    <td>{estimated_loss_kwh}</td>
+                    <td>{estimated_loss_percent}</td>
+                    <td>
+                        <span class="risk risk-{risk_level}">
+                            {risk_level}
+                        </span>
+                    </td>
                 </tr>
                 """
             )
@@ -85,22 +104,22 @@ class LossDashboardGenerator:
 
         points = []
         for record in records:
+            latitude = self._to_float(record.get("latitude", 0))
+            longitude = self._to_float(record.get("longitude", 0))
+
             left = self._normalize_coordinate(
-                value=float(record.get("longitude", 0)),
+                value=longitude,
                 min_value=-35.0,
                 max_value=-34.7,
             )
             top = 100 - self._normalize_coordinate(
-                value=float(record.get("latitude", 0)),
+                value=latitude,
                 min_value=-8.1,
                 max_value=-7.8,
             )
-            risk_level = record.get("risk_level", "low")
-            title = (
-                f'{record.get("transformer_code", "")} - '
-                f'{record.get("neighborhood", "")} - '
-                f'{self._format_percent(record.get("estimated_loss_percent", 0))}'
-            )
+
+            risk_level = self._get_risk_level(record)
+            title = self._build_point_title(record)
 
             points.append(
                 f"""
@@ -114,6 +133,15 @@ class LossDashboardGenerator:
 
         return "\n".join(points)
 
+    def _build_point_title(self, record: dict[str, Any]) -> str:
+        transformer_code = self._get_text(record, "transformer_code")
+        neighborhood = self._get_text(record, "neighborhood")
+        loss_percent = self._format_percent(
+            record.get("estimated_loss_percent", 0),
+        )
+
+        return f"{transformer_code} - {neighborhood} - {loss_percent}"
+
     def _normalize_coordinate(
         self,
         value: float,
@@ -126,11 +154,37 @@ class LossDashboardGenerator:
         normalized = ((value - min_value) / (max_value - min_value)) * 100
         return min(95.0, max(5.0, normalized))
 
+    def _get_text(self, record: dict[str, Any], key: str) -> str:
+        value = record.get(key, "")
+        if value is None:
+            return ""
+
+        return str(value)
+
+    def _get_risk_level(self, record: dict[str, Any]) -> str:
+        risk_level = self._get_text(record, "risk_level").lower().strip()
+        allowed_levels = {"critical", "high", "medium", "low"}
+
+        if risk_level in allowed_levels:
+            return risk_level
+
+        return "low"
+
+    def _to_float(self, value: Any) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
     def _format_number(self, value: Any) -> str:
-        return f"{float(value):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        number = self._to_float(value)
+        formatted = f"{number:,.2f}"
+
+        return formatted.replace(",", "X").replace(".", ",").replace("X", ".")
 
     def _format_percent(self, value: Any) -> str:
-        return f"{float(value) * 100:.2f}%".replace(".", ",")
+        number = self._to_float(value)
+        return f"{number * 100:.2f}%".replace(".", ",")
 
     def _template(self) -> str:
         return """
@@ -246,8 +300,16 @@ class LossDashboardGenerator:
             border-radius: 12px;
             overflow: hidden;
             background:
-                linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.96)),
-                radial-gradient(circle at 70% 40%, rgba(34, 197, 94, 0.2), transparent 28%);
+                linear-gradient(
+                    135deg,
+                    rgba(15, 23, 42, 0.92),
+                    rgba(30, 41, 59, 0.96)
+                ),
+                radial-gradient(
+                    circle at 70% 40%,
+                    rgba(34, 197, 94, 0.2),
+                    transparent 28%
+                );
             border: 1px solid #111827;
         }
 
@@ -341,7 +403,10 @@ class LossDashboardGenerator:
             <section class="header">
                 <div>
                     <h1>Visão Operacional de Perdas</h1>
-                    <p>Monitoramento de áreas críticas por transformador e ciclo mensal.</p>
+                    <p>
+                        Monitoramento de áreas críticas por transformador
+                        e ciclo mensal.
+                    </p>
                 </div>
                 <div class="filter">
                     Referência: <strong>$reference_month</strong>
@@ -380,10 +445,13 @@ class LossDashboardGenerator:
                     <h2>Mapa operacional</h2>
                     <div class="map">
                         $map_points
-                        <div class="map-label">Pontos aproximados por latitude/longitude</div>
+                        <div class="map-label">
+                            Pontos aproximados por latitude/longitude
+                        </div>
                     </div>
                     <div class="note">
-                        Mapa demonstrativo para priorização. Integração com mapa real será adicionada em fase posterior.
+                        Mapa demonstrativo para priorização. Integração com
+                        mapa real será adicionada em fase posterior.
                     </div>
                 </div>
 
