@@ -1,0 +1,4 @@
+area_id,reference_month,solar_panel_count,estimated_solar_area_m2,estimated_generation_kwh,confidence_score
+area-001,2026-05,18,72.0,950.0,0.86
+area-002,2026-05,4,16.0,210.0,0.74
+area-003,2026-05,25,100.0,1350.0,0.89
