@@ -1,0 +1,1 @@
+area_id,transformer_code,latitude,longitude,neighborhood,city,feeder,customer_count,reference_month,injected_energy_kwh,billed_consumption_kwh,substation_code,installed_power_kva,measurement_source,measurement_quality_flag,technical_loss_estimate_kwh

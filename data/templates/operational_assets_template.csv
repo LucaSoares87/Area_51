@@ -1,0 +1,41 @@
+# Contratos de Dados Reais
+
+Esta pasta reúne os contratos de dados necessários para o Ciclo 3 do Area_51.
+
+## Objetivo do Ciclo 3
+
+Preparar o projeto para piloto real com dados da concessionária, incluindo:
+
+- perdas por transformador
+- perdas por alimentador
+- busca por matrícula
+- busca por transformador
+- busca por alimentador
+- busca por subestação
+- análise territorial com IBGE
+- análise social agregada com CRAS/CadÚnico
+- geração distribuída
+- upload de imagem aérea
+- análise de telhados
+- score socioenergético final
+
+## Arquivos
+
+| Arquivo | Finalidade |
+|---|---|
+| monthly_losses_real_contract.md | Layout real de perdas mensais |
+| gd_monthly_balance_contract.md | Layout de geração distribuída |
+| ibge_cras_contract.md | Layouts de IBGE, CRAS e vínculos territoriais |
+| operational_search_contract.md | Dados necessários para busca operacional |
+
+## Templates CSV
+
+Os templates correspondentes ficam em:
+
+data/templates/
+
+## Regra de privacidade
+
+O projeto deve operar preferencialmente com dados agregados por transformador, área, alimentador, subestação, setor censitário ou território CRAS.
+
+Evitar dados pessoais sempre que possível.
