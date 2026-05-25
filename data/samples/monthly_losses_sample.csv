@@ -1,0 +1,4 @@
+area_id,transformer_code,latitude,longitude,neighborhood,city,feeder,customer_count,reference_month,injected_energy_kwh,billed_consumption_kwh
+area-001,TR-001,-7.9401,-34.8734,Maranguape I,Paulista,AL-01,120,2026-05,12000,8300
+area-002,TR-002,-7.9512,-34.8821,Janga,Paulista,AL-02,98,2026-05,9400,7800
+area-003,TR-003,-7.9315,-34.8652,Centro,Paulista,AL-03,150,2026-05,15000,8800
