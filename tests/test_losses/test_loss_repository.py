@@ -40,3 +40,56 @@ def test_loss_repository_saves_and_lists_records(tmp_path: Path) -> None:
     assert records[0]["transformer_code"] == "TR-001"
     assert records[0]["estimated_loss_kwh"] == 300.0
     assert records[0]["risk_level"] == "high"
+
+def test_loss_repository_counts_recent_loss_recurrence(tmp_path: Path) -> None:
+    repository = LossRepository(database_path=tmp_path / "area51.db")
+    repository.initialize()
+
+    area = OperationalArea(
+        area_id="area-001",
+        transformer_code="TR-001",
+        latitude=-7.9401,
+        longitude=-34.8734,
+        neighborhood="Maranguape I",
+        city="Paulista",
+        feeder="AL-01",
+        customer_count=120,
+    )
+
+    repository.save_area(area)
+
+    calculator = LossCalculator()
+    records = [
+        calculator.calculate_record(
+            area_id=area.area_id,
+            reference_month="2026-03",
+            injected_energy_kwh=1000.0,
+            billed_consumption_kwh=850.0,
+            customer_count=area.customer_count,
+        ),
+        calculator.calculate_record(
+            area_id=area.area_id,
+            reference_month="2026-04",
+            injected_energy_kwh=1000.0,
+            billed_consumption_kwh=700.0,
+            customer_count=area.customer_count,
+        ),
+        calculator.calculate_record(
+            area_id=area.area_id,
+            reference_month="2026-05",
+            injected_energy_kwh=1000.0,
+            billed_consumption_kwh=650.0,
+            customer_count=area.customer_count,
+        ),
+    ]
+
+    for record in records:
+        repository.save_monthly_loss_record(record)
+
+    recurrence_count = repository.count_recent_loss_recurrence(
+        area_id=area.area_id,
+        reference_month="2026-05",
+        minimum_loss_percent=0.1,
+    )
+
+    assert recurrence_count == 3
