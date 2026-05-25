@@ -1,0 +1,4 @@
+territory_id,cras_code,cras_name,city,state,neighborhood,assisted_families,vulnerable_families
+cras-territory-001,CRAS-001,CRAS Maranguape,Paulista,PE,Maranguape I,80,50
+cras-territory-002,CRAS-002,CRAS Janga,Paulista,PE,Janga,60,35
+cras-territory-003,CRAS-003,CRAS Centro,Paulista,PE,Centro,95,70
