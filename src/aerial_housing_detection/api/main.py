@@ -6,6 +6,9 @@ from src.aerial_housing_detection.api.routes.detection import router as detectio
 from src.aerial_housing_detection.api.routes.health import router as health_router
 from src.aerial_housing_detection.api.routes.losses import router as losses_router
 from src.aerial_housing_detection.api.routes.report import router as report_router
+from src.aerial_housing_detection.api.routes.socioenergy import (
+    router as socioenergy_router,
+)
 
 
 def create_app() -> FastAPI:
@@ -23,6 +26,8 @@ def create_app() -> FastAPI:
     app.include_router(detection_router)
     app.include_router(report_router)
     app.include_router(losses_router)
+    app.include_router(socioenergy_router)
+
     return app
 
 
