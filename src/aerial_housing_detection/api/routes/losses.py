@@ -118,6 +118,7 @@ def seed_loss_records(request: SeedLossesRequest) -> LossRankingResponse:
             reference_month=request.reference_month,
             injected_energy_kwh=injected_energy_kwh,
             billed_consumption_kwh=billed_consumption_kwh,
+            customer_count=area.customer_count,
         )
         repository.save_monthly_loss_record(record)
 
