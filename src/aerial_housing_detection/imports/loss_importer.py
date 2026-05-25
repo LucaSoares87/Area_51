@@ -75,22 +75,7 @@ class LossCsvImporter:
             for row_number, row in enumerate(reader, start=2):
                 try:
                     area = self._build_area(row)
-                    record = self.calculator.calculate_record(
-                        area_id=area.area_id,
-                        reference_month=self._get_required_text(
-                            row,
-                            "reference_month",
-                        ),
-                        injected_energy_kwh=self._get_required_float(
-                            row,
-                            "injected_energy_kwh",
-                        ),
-                        billed_consumption_kwh=self._get_required_float(
-                            row,
-                            "billed_consumption_kwh",
-                        ),
-                        customer_count=area.customer_count,
-                    )
+                    record = self._build_monthly_record(row=row, area=area)
 
                     self.repository.save_area(area)
                     self.repository.save_monthly_loss_record(record)
@@ -124,6 +109,34 @@ class LossCsvImporter:
             city=self._get_required_text(row, "city"),
             feeder=self._get_required_text(row, "feeder"),
             customer_count=self._get_required_int(row, "customer_count"),
+        )
+
+    def _build_monthly_record(
+        self,
+        row: dict[str, Any],
+        area: OperationalArea,
+    ):
+        reference_month = self._get_required_text(row, "reference_month")
+        injected_energy_kwh = self._get_required_float(
+            row,
+            "injected_energy_kwh",
+        )
+        billed_consumption_kwh = self._get_required_float(
+            row,
+            "billed_consumption_kwh",
+        )
+        recurrence_months = self.repository.count_recent_loss_recurrence(
+            area_id=area.area_id,
+            reference_month=reference_month,
+        )
+
+        return self.calculator.calculate_record(
+            area_id=area.area_id,
+            reference_month=reference_month,
+            injected_energy_kwh=injected_energy_kwh,
+            billed_consumption_kwh=billed_consumption_kwh,
+            customer_count=area.customer_count,
+            recurrence_months=recurrence_months + 1,
         )
 
     def _get_required_text(self, row: dict[str, Any], key: str) -> str:

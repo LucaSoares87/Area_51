@@ -155,6 +155,42 @@ class LossRepository:
 
         return [dict(row) for row in rows]
 
+    def count_recent_loss_recurrence(
+        self,
+        area_id: str,
+        reference_month: str,
+        minimum_loss_percent: float = 0.1,
+        max_months: int = 6,
+    ) -> int:
+        query = """
+            SELECT COUNT(*) AS recurrence_count
+            FROM (
+                SELECT estimated_loss_percent
+                FROM monthly_loss_records
+                WHERE area_id = ?
+                  AND reference_month <= ?
+                ORDER BY reference_month DESC
+                LIMIT ?
+            ) recent_losses
+            WHERE estimated_loss_percent >= ?
+        """
+
+        with self._connect() as connection:
+            row = connection.execute(
+                query,
+                (
+                    area_id,
+                    reference_month,
+                    max_months,
+                    minimum_loss_percent,
+                ),
+            ).fetchone()
+
+        if row is None:
+            return 0
+
+        return int(row["recurrence_count"])
+
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row

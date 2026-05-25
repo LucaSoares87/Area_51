@@ -113,12 +113,17 @@ def seed_loss_records(request: SeedLossesRequest) -> LossRankingResponse:
     for area in areas:
         repository.save_area(area)
         injected_energy_kwh, billed_consumption_kwh = energy_pairs[area.area_id]
+        recurrence_months = repository.count_recent_loss_recurrence(
+            area_id=area.area_id,
+            reference_month=request.reference_month,
+        )
         record = calculator.calculate_record(
             area_id=area.area_id,
             reference_month=request.reference_month,
             injected_energy_kwh=injected_energy_kwh,
             billed_consumption_kwh=billed_consumption_kwh,
             customer_count=area.customer_count,
+            recurrence_months=recurrence_months + 1,
         )
         repository.save_monthly_loss_record(record)
 
