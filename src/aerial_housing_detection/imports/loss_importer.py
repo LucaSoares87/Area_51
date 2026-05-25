@@ -89,6 +89,7 @@ class LossCsvImporter:
                             row,
                             "billed_consumption_kwh",
                         ),
+                        customer_count=area.customer_count,
                     )
 
                     self.repository.save_area(area)
