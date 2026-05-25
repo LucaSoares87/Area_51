@@ -1,0 +1,4 @@
+sector_id,city,state,neighborhood,population,households,average_residents_per_household
+sector-001,Paulista,PE,Maranguape I,480,120,4.0
+sector-002,Paulista,PE,Janga,392,98,4.0
+sector-003,Paulista,PE,Centro,600,150,4.0
