@@ -13,18 +13,30 @@
         <p class="eyebrow">Area 51</p>
         <h1>Interface Operacional</h1>
         <p class="subtitle">
-          Consulte matrícula, transformador, alimentador, subestação, coordenadas e envie imagem aérea para análise de telhados.
+          Consulte ativos elétricos, envie imagem aérea e visualize resultados de forma simples para apoio à análise operacional.
         </p>
       </div>
+
       <div class="status-card">
         <span>Ambiente</span>
         <strong>Local</strong>
       </div>
     </header>
 
+    <section class="notice">
+      <strong>Fluxo sugerido:</strong>
+      busque uma matrícula, transformador, alimentador, subestação ou coordenadas. Depois, envie uma imagem aérea para estimar telhados.
+    </section>
+
     <section class="grid">
       <article class="card">
-        <h2>Busca operacional</h2>
+        <div class="card-title">
+          <div>
+            <h2>Busca operacional</h2>
+            <p>Localize o ativo ou território de análise.</p>
+          </div>
+          <span class="tag">Consulta</span>
+        </div>
 
         <label for="referenceMonth">Mês de referência</label>
         <input id="referenceMonth" type="month" value="2026-05">
@@ -62,12 +74,25 @@
       </article>
 
       <article class="card">
-        <h2>Upload de imagem aérea</h2>
-        <p class="muted">
-          Use imagem do Google Earth, drone, ortofoto ou print aéreo da área analisada.
-        </p>
+        <div class="card-title">
+          <div>
+            <h2>Imagem aérea</h2>
+            <p>Envie uma imagem do Google Earth, drone, ortofoto ou print aéreo.</p>
+          </div>
+          <span class="tag">Upload</span>
+        </div>
 
-        <input id="roofImage" type="file" accept="image/*">
+        <label for="roofImage">Arquivo de imagem</label>
+        <input id="roofImage" type="file" accept="image/*" onchange="previewSelectedImage()">
+
+        <div id="imagePreviewCard" class="image-preview hidden">
+          <img id="imagePreview" alt="Pré-visualização da imagem enviada">
+          <div>
+            <strong id="imageName">Imagem selecionada</strong>
+            <span id="imageSize">Tamanho não informado</span>
+          </div>
+        </div>
+
         <button class="full" onclick="uploadRoofImage()">Enviar imagem</button>
 
         <div class="hint">
@@ -76,12 +101,49 @@
       </article>
     </section>
 
-    <section class="card result-card">
-      <div class="result-header">
-        <h2>Resultado</h2>
-        <button class="secondary" onclick="clearResult()">Limpar</button>
-      </div>
-      <pre id="result">{}</pre>
+    <section class="result-layout">
+      <article class="card">
+        <div class="result-header">
+          <div>
+            <h2>Resumo da análise</h2>
+            <p id="operationStatus" class="status-text neutral">Nenhuma operação executada.</p>
+          </div>
+          <button class="secondary" onclick="clearResult()">Limpar</button>
+        </div>
+
+        <div id="summaryCards" class="summary-grid">
+          <div class="summary-card">
+            <span>Tipo</span>
+            <strong id="summaryType">-</strong>
+          </div>
+          <div class="summary-card">
+            <span>Consulta</span>
+            <strong id="summaryQuery">-</strong>
+          </div>
+          <div class="summary-card">
+            <span>Registros</span>
+            <strong id="summaryRecords">-</strong>
+          </div>
+          <div class="summary-card">
+            <span>Status</span>
+            <strong id="summaryStatus">Aguardando</strong>
+          </div>
+        </div>
+
+        <div id="friendlyResult" class="friendly-result">
+          Execute uma busca ou envie uma imagem para visualizar o resultado.
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="result-header">
+          <div>
+            <h2>Resultado técnico</h2>
+            <p>Resposta completa retornada pela API.</p>
+          </div>
+        </div>
+        <pre id="result">{}</pre>
+      </article>
     </section>
   </main>
 
