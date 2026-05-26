@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Area 51 - Interface Operacional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/app/static/styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <p class="eyebrow">Area 51</p>
+        <h1>Interface Operacional</h1>
+        <p class="subtitle">
+          Consulte matrícula, transformador, alimentador, subestação, coordenadas e envie imagem aérea para análise de telhados.
+        </p>
+      </div>
+      <div class="status-card">
+        <span>Ambiente</span>
+        <strong>Local</strong>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Busca operacional</h2>
+
+        <label for="referenceMonth">Mês de referência</label>
+        <input id="referenceMonth" type="month" value="2026-05">
+
+        <label for="customerId">Matrícula</label>
+        <div class="row">
+          <input id="customerId" type="text" placeholder="Ex.: UC-001">
+          <button onclick="searchCustomer()">Buscar</button>
+        </div>
+
+        <label for="transformerCode">Transformador</label>
+        <div class="row">
+          <input id="transformerCode" type="text" placeholder="Ex.: TR-001">
+          <button onclick="searchTransformer()">Buscar</button>
+        </div>
+
+        <label for="feederCode">Alimentador</label>
+        <div class="row">
+          <input id="feederCode" type="text" placeholder="Ex.: AL-01">
+          <button onclick="searchFeeder()">Buscar</button>
+        </div>
+
+        <label for="substationCode">Subestação</label>
+        <div class="row">
+          <input id="substationCode" type="text" placeholder="Ex.: SE-01">
+          <button onclick="searchSubstation()">Buscar</button>
+        </div>
+
+        <label>Coordenadas</label>
+        <div class="row two">
+          <input id="latitude" type="number" step="any" placeholder="Latitude">
+          <input id="longitude" type="number" step="any" placeholder="Longitude">
+          <button onclick="searchCoordinates()">Buscar</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Upload de imagem aérea</h2>
+        <p class="muted">
+          Use imagem do Google Earth, drone, ortofoto ou print aéreo da área analisada.
+        </p>
+
+        <input id="roofImage" type="file" accept="image/*">
+        <button class="full" onclick="uploadRoofImage()">Enviar imagem</button>
+
+        <div class="hint">
+          A análise retorna telhados estimados, confiança e identificador da análise.
+        </div>
+      </article>
+    </section>
+
+    <section class="card result-card">
+      <div class="result-header">
+        <h2>Resultado</h2>
+        <button class="secondary" onclick="clearResult()">Limpar</button>
+      </div>
+      <pre id="result">{}</pre>
+    </section>
+  </main>
+
+  <script src="/app/static/app.js"></script>
+</body>
+</html>

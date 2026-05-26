@@ -18,6 +18,12 @@ from src.aerial_housing_detection.api.routes.roof_upload import (
 from src.aerial_housing_detection.api.routes.socioenergy import (
     router as socioenergy_router,
 )
+from src.aerial_housing_detection.api.routes.web_app import (
+    router as web_app_router,
+)
+from src.aerial_housing_detection.api.routes.web_app import (
+    static_files as web_static_files,
+)
 
 
 def create_app() -> FastAPI:
@@ -39,6 +45,9 @@ def create_app() -> FastAPI:
     app.include_router(grid_aggregation_router)
     app.include_router(operational_search_router)
     app.include_router(roof_upload_router)
+    app.include_router(web_app_router)
+    app.mount("/app/static", web_static_files, name="app-static")
+
     return app
 
 
