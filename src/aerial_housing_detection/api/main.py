@@ -12,6 +12,9 @@ from src.aerial_housing_detection.api.routes.operational_search import (
     router as operational_search_router,
 )
 from src.aerial_housing_detection.api.routes.report import router as report_router
+from src.aerial_housing_detection.api.routes.roof_upload import (
+    router as roof_upload_router,
+)
 from src.aerial_housing_detection.api.routes.socioenergy import (
     router as socioenergy_router,
 )
@@ -35,6 +38,7 @@ def create_app() -> FastAPI:
     app.include_router(socioenergy_router)
     app.include_router(grid_aggregation_router)
     app.include_router(operational_search_router)
+    app.include_router(roof_upload_router)
     return app
 
 
