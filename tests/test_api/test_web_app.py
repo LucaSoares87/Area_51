@@ -32,6 +32,8 @@ def test_web_app_returns_html_interface() -> None:
     assert "Interface Operacional" in response.text
     assert "Resumo da análise" in response.text
     assert "Mapa de calor e transformadores" in response.text
+    assert "loggedUser" in response.text
+    assert "logout()" in response.text
 
 
 def test_web_app_serves_javascript_asset() -> None:
@@ -41,6 +43,9 @@ def test_web_app_serves_javascript_asset() -> None:
     assert "function searchTransformer" in response.text
     assert "function renderFriendlyResult" in response.text
     assert "function openOperationalMap" in response.text
+    assert "function initializeSession" in response.text
+    assert "function logout" in response.text
+    assert "Bearer" in response.text
 
 
 def test_web_app_serves_css_asset() -> None:
@@ -49,6 +54,8 @@ def test_web_app_serves_css_asset() -> None:
     assert response.status_code == 200
     assert ".summary-card" in response.text
     assert ".quick-card" in response.text
+    assert ".session-card" in response.text
+    assert ".logout-button" in response.text
 
 
 def test_web_login_serves_javascript_asset() -> None:

@@ -59,6 +59,7 @@ h2 {
 }
 
 .status-card,
+.session-card,
 .card,
 .notice,
 .summary-card,
@@ -69,12 +70,22 @@ h2 {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
-.status-card {
+.status-card,
+.session-card {
   min-width: 150px;
   padding: 16px;
 }
 
+.session-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  min-width: 260px;
+}
+
 .status-card span,
+.session-card span,
 .summary-card span,
 .quick-card span {
   display: block;
@@ -82,10 +93,23 @@ h2 {
   font-size: 13px;
 }
 
-.status-card strong {
+.status-card strong,
+.session-card strong {
   display: block;
   margin-top: 6px;
-  font-size: 20px;
+  font-size: 18px;
+  word-break: break-word;
+}
+
+.logout-button {
+  min-height: 36px;
+  padding: 8px 12px;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.logout-button:hover {
+  background: #cbd5e1;
 }
 
 .notice {
@@ -354,6 +378,11 @@ pre {
   .quick-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .session-card {
+    grid-template-columns: 1fr;
+    min-width: 0;
   }
 
   .summary-grid {
