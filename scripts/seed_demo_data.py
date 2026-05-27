@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 DATA_PATH = Path("data/demo/area51_demo_assets.json")
 DB_PATH = Path("data/area51.db")
@@ -67,40 +68,45 @@ def create_tables(connection: sqlite3.Connection) -> None:
 def insert_assets(
     connection: sqlite3.Connection,
     reference_month: str,
-    assets: list[dict],
+    assets: list[dict[str, Any]],
 ) -> None:
     connection.execute("DELETE FROM demo_operational_assets")
 
+    insert_sql = """
+        INSERT INTO demo_operational_assets (
+            reference_month,
+            area_id,
+            transformer_code,
+            feeder_code,
+            substation_code,
+            city,
+            neighborhood,
+            latitude,
+            longitude,
+            customer_count,
+            supplied_energy_kwh,
+            billed_energy_kwh,
+            estimated_loss_kwh,
+            loss_percent,
+            loss_recurrence_months,
+            solar_estimated_kwh,
+            adjusted_loss_kwh,
+            adjusted_loss_percent,
+            estimated_roofs,
+            cras_territory,
+            ibge_sector_id,
+            vulnerability_index,
+            priority,
+            risk_label
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        )
+    """
+
     for asset in assets:
         connection.execute(
-            """
-            INSERT INTO demo_operational_assets (
-                reference_month,
-                area_id,
-                transformer_code,
-                feeder_code,
-                substation_code,
-                city,
-                neighborhood,
-                latitude,
-                longitude,
-                customer_count,
-                supplied_energy_kwh,
-                billed_energy_kwh,
-                estimated_loss_kwh,
-                loss_percent,
-                loss_recurrence_months,
-                solar_estimated_kwh,
-                adjusted_loss_kwh,
-                adjusted_loss_percent,
-                estimated_roofs,
-                cras_territory,
-                ibge_sector_id,
-                vulnerability_index,
-                priority,
-                risk_label
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
+            insert_sql,
             (
                 reference_month,
                 asset["area_id"],
@@ -130,41 +136,9 @@ def insert_assets(
         )
 
 
-def build_map_html(assets: list[dict]) -> str:
-    rows = "\n".join(
-        f"""
-        <tr>
-          <td>{asset["transformer_code"]}</td>
-          <td>{asset["feeder_code"]}</td>
-          <td>{asset["substation_code"]}</td>
-          <td>{asset["neighborhood"]}</td>
-          <td>{asset["customer_count"]}</td>
-          <td>{asset["estimated_loss_kwh"]:,.0f} kWh</td>
-          <td>{asset["solar_estimated_kwh"]:,.0f} kWh</td>
-          <td>{asset["adjusted_loss_kwh"]:,.0f} kWh</td>
-          <td>{asset["priority"]}</td>
-        </tr>
-        """
-        for asset in assets
-    )
-
-    cards = "\n".join(
-        f"""
-        <section class="asset-card priority-{asset["priority"].lower()}">
-          <h2>{asset["transformer_code"]}</h2>
-          <p><strong>Área:</strong> {asset["area_id"]}</p>
-          <p><strong>Localidade:</strong> {asset["neighborhood"]} - {asset["city"]}</p>
-          <p><strong>Clientes:</strong> {asset["customer_count"]}</p>
-          <p><strong>Perda estimada:</strong> {asset["estimated_loss_kwh"]:,.0f} kWh ({asset["loss_percent"]}%)</p>
-          <p><strong>GD/Solar estimada:</strong> {asset["solar_estimated_kwh"]:,.0f} kWh</p>
-          <p><strong>Perda ajustada:</strong> {asset["adjusted_loss_kwh"]:,.0f} kWh ({asset["adjusted_loss_percent"]}%)</p>
-          <p><strong>CRAS:</strong> {asset["cras_territory"]}</p>
-          <p><strong>IBGE:</strong> {asset["ibge_sector_id"]}</p>
-          <p><strong>Prioridade:</strong> {asset["priority"]}</p>
-        </section>
-        """
-        for asset in assets
-    )
+def build_map_html(assets: list[dict[str, Any]]) -> str:
+    rows = "\n".join(_build_asset_table_row(asset) for asset in assets)
+    cards = "\n".join(_build_asset_card(asset) for asset in assets)
 
     return f"""
 <!doctype html>
@@ -248,6 +222,15 @@ def build_map_html(assets: list[dict]) -> str:
       color: #075985;
       line-height: 1.5;
     }}
+    @media (max-width: 920px) {{
+      .heatmap {{
+        grid-template-columns: 1fr;
+      }}
+      table {{
+        display: block;
+        overflow-x: auto;
+      }}
+    }}
   </style>
 </head>
 <body>
@@ -291,6 +274,54 @@ def build_map_html(assets: list[dict]) -> str:
 </body>
 </html>
 """
+
+
+def _build_asset_card(asset: dict[str, Any]) -> str:
+    loss_text = (
+        f'{asset["estimated_loss_kwh"]:,.0f} kWh '
+        f'({asset["loss_percent"]}%)'
+    )
+    adjusted_loss_text = (
+        f'{asset["adjusted_loss_kwh"]:,.0f} kWh '
+        f'({asset["adjusted_loss_percent"]}%)'
+    )
+    solar_text = f'{asset["solar_estimated_kwh"]:,.0f} kWh'
+    priority_class = str(asset["priority"]).lower()
+
+    return f"""
+        <section class="asset-card priority-{priority_class}">
+          <h2>{asset["transformer_code"]}</h2>
+          <p><strong>Área:</strong> {asset["area_id"]}</p>
+          <p><strong>Localidade:</strong> {asset["neighborhood"]} - {asset["city"]}</p>
+          <p><strong>Clientes:</strong> {asset["customer_count"]}</p>
+          <p><strong>Perda estimada:</strong> {loss_text}</p>
+          <p><strong>GD/Solar estimada:</strong> {solar_text}</p>
+          <p><strong>Perda ajustada:</strong> {adjusted_loss_text}</p>
+          <p><strong>CRAS:</strong> {asset["cras_territory"]}</p>
+          <p><strong>IBGE:</strong> {asset["ibge_sector_id"]}</p>
+          <p><strong>Prioridade:</strong> {asset["priority"]}</p>
+        </section>
+        """
+
+
+def _build_asset_table_row(asset: dict[str, Any]) -> str:
+    estimated_loss = f'{asset["estimated_loss_kwh"]:,.0f} kWh'
+    solar_estimated = f'{asset["solar_estimated_kwh"]:,.0f} kWh'
+    adjusted_loss = f'{asset["adjusted_loss_kwh"]:,.0f} kWh'
+
+    return f"""
+        <tr>
+          <td>{asset["transformer_code"]}</td>
+          <td>{asset["feeder_code"]}</td>
+          <td>{asset["substation_code"]}</td>
+          <td>{asset["neighborhood"]}</td>
+          <td>{asset["customer_count"]}</td>
+          <td>{estimated_loss}</td>
+          <td>{solar_estimated}</td>
+          <td>{adjusted_loss}</td>
+          <td>{asset["priority"]}</td>
+        </tr>
+        """
 
 
 if __name__ == "__main__":
