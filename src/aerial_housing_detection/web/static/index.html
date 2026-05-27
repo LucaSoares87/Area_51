@@ -25,7 +25,32 @@
 
     <section class="notice">
       <strong>Fluxo sugerido:</strong>
-      busque uma matrícula, transformador, alimentador, subestação ou coordenadas. Depois, envie uma imagem aérea para estimar telhados.
+      busque uma matrícula, transformador, alimentador, subestação ou coordenadas.
+      Depois, envie uma imagem aérea para estimar telhados ou abra o mapa operacional para análise territorial.
+    </section>
+
+    <section class="quick-actions">
+      <article class="quick-card">
+        <div>
+          <span>Mapa operacional</span>
+          <strong>Mapa de calor e transformadores</strong>
+          <p>
+            Acesse o mapa gerado com perdas por transformador, geração solar estimada e perda ajustada.
+          </p>
+        </div>
+        <button type="button" onclick="openOperationalMap()">Abrir mapa</button>
+      </article>
+
+      <article class="quick-card secondary-card">
+        <div>
+          <span>Próxima integração</span>
+          <strong>Dashboard socioenergético</strong>
+          <p>
+            Indicadores de perdas, telhados, clientes, IBGE, CRAS e vulnerabilidade territorial.
+          </p>
+        </div>
+        <button type="button" onclick="showDashboardInfo()">Ver orientação</button>
+      </article>
     </section>
 
     <section class="grid">
@@ -131,7 +156,7 @@
         </div>
 
         <div id="friendlyResult" class="friendly-result">
-          Execute uma busca ou envie uma imagem para visualizar o resultado.
+          Execute uma busca, envie uma imagem ou abra o mapa operacional para visualizar o resultado.
         </div>
       </article>
 
