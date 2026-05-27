@@ -6,6 +6,40 @@ const summaryTypeElement = document.getElementById("summaryType");
 const summaryQueryElement = document.getElementById("summaryQuery");
 const summaryRecordsElement = document.getElementById("summaryRecords");
 const summaryStatusElement = document.getElementById("summaryStatus");
+const loggedUserElement = document.getElementById("loggedUser");
+
+initializeSession();
+
+function initializeSession() {
+  const token = getAccessToken();
+  const registration = sessionStorage.getItem("area51_employee_registration");
+
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
+
+  if (loggedUserElement) {
+    loggedUserElement.textContent = registration || "Sessão ativa";
+  }
+}
+
+function getAccessToken() {
+  return sessionStorage.getItem("area51_access_token");
+}
+
+function buildHeaders(extraHeaders = {}) {
+  const token = getAccessToken();
+  const headers = {
+    ...extraHeaders,
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
 
 function getValue(id) {
   return document.getElementById(id).value.trim();
@@ -48,7 +82,17 @@ function setLoading(message) {
 async function requestJson(url, options = {}) {
   setLoading("Aguardando resposta da API...");
 
-  const response = await fetch(url, options);
+  const response = await fetch(url, {
+    ...options,
+    headers: buildHeaders(options.headers || {}),
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    clearSession();
+    window.location.href = "/login";
+    throw new Error("Sessão expirada. Faça login novamente.");
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
@@ -291,6 +335,13 @@ function previewSelectedImage() {
 }
 
 function openOperationalMap() {
+  const token = getAccessToken();
+
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
+
   window.open("/app/map", "_blank", "noopener,noreferrer");
 }
 
@@ -304,6 +355,18 @@ function showDashboardInfo() {
 
 function clearResult() {
   showResult({});
+}
+
+function logout() {
+  clearSession();
+  window.location.href = "/login";
+}
+
+function clearSession() {
+  sessionStorage.removeItem("area51_access_token");
+  sessionStorage.removeItem("area51_refresh_token");
+  sessionStorage.removeItem("area51_employee_registration");
+  sessionStorage.removeItem("area51_role");
 }
 
 function formatPercent(value) {
