@@ -24,6 +24,7 @@ from src.aerial_housing_detection.api.routes.web_app import (
 from src.aerial_housing_detection.api.routes.web_app import (
     static_files as web_static_files,
 )
+from src.aerial_housing_detection.api.routes.web_auth import router as web_auth_router
 
 
 def create_app() -> FastAPI:
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(roof_upload_router)
     app.include_router(web_app_router)
     app.mount("/app/static", web_static_files, name="app-static")
+    app.include_router(web_auth_router)
 
     return app
 
