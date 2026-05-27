@@ -61,7 +61,7 @@ async function requestJson(url, options = {}) {
 
 function renderFriendlyResult(data) {
   if (!data || Object.keys(data).length === 0) {
-    friendlyResultElement.textContent = "Execute uma busca ou envie uma imagem para visualizar o resultado.";
+    friendlyResultElement.textContent = "Execute uma busca, envie uma imagem ou abra o mapa operacional para visualizar o resultado.";
     updateSummary({ type: "-", query: "-", records: "-" });
     setStatus("Aguardando", "neutral");
     return;
@@ -288,6 +288,18 @@ function previewSelectedImage() {
   imageName.textContent = file.name;
   imageSize.textContent = formatFileSize(file.size);
   previewCard.classList.remove("hidden");
+}
+
+function openOperationalMap() {
+  window.open("/app/map", "_blank", "noopener,noreferrer");
+}
+
+function showDashboardInfo() {
+  showResult({
+    status: "info",
+    feature: "dashboard_socioenergy",
+    message: "O dashboard socioenergético será integrado em uma etapa posterior. O mapa operacional já pode ser acessado pelo botão Abrir mapa.",
+  });
 }
 
 function clearResult() {
