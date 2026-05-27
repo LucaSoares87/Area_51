@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Area 51 - Acesso Operacional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/app/static/login.css">
+</head>
+<body>
+  <main class="login-page">
+    <section class="brand-panel">
+      <div class="brand-content">
+        <img
+          src="/app/static/assets/neoenergia-pernambuco.jpg"
+          alt="Neoenergia Pernambuco"
+          class="brand-logo"
+        >
+
+        <div class="brand-text">
+          <p class="eyebrow">Area 51</p>
+          <h1>Inteligência operacional para perdas e território</h1>
+          <p>
+            Acesse o ambiente de análise para consultar ativos, visualizar
+            indicadores, enviar imagem aérea e apoiar decisões operacionais.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-panel">
+      <form class="login-card" onsubmit="handleLogin(event)">
+        <div class="login-header">
+          <p class="eyebrow">Acesso restrito</p>
+          <h2>Entrar no sistema</h2>
+          <p>
+            Informe sua matrícula funcional e senha de acesso.
+          </p>
+        </div>
+
+        <label for="employeeRegistration">Matrícula</label>
+        <input
+          id="employeeRegistration"
+          name="employeeRegistration"
+          type="text"
+          placeholder="Ex.: B626278"
+          autocomplete="username"
+          required
+        >
+
+        <label for="password">Senha</label>
+        <div class="password-field">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Informe sua senha"
+            autocomplete="current-password"
+            required
+          >
+          <button
+            id="togglePasswordButton"
+            class="password-toggle"
+            type="button"
+            onclick="togglePasswordVisibility()"
+            aria-label="Mostrar senha"
+            aria-pressed="false"
+          >
+            Ver
+          </button>
+        </div>
+
+        <div class="login-options">
+          <label class="checkbox-label">
+            <input id="rememberAccess" type="checkbox">
+            Manter matrícula lembrada
+          </label>
+          <a href="#" onclick="showAccessInfo(event)">Primeiro acesso?</a>
+        </div>
+
+        <button type="submit">Acessar ambiente</button>
+
+        <p id="loginMessage" class="login-message">
+          O acesso deve ser liberado pelo setor responsável.
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <script src="/app/static/login.js"></script>
+</body>
+</html>
