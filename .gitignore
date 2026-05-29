@@ -17,3 +17,5 @@ models/yolo/*.pb
 models/yolo/*.json
 data/yolo/**/*.cache
 data/yolo/**/_backup*/
+# Dados reais/importações locais
+data/imports/
