@@ -1,0 +1,143 @@
+{
+  "reference_month": "2026-05",
+  "substations": [
+    {
+      "substation_code": "SE-01",
+      "substation_name": "Subestação Recife Sul",
+      "city": "Recife",
+      "main_feeders": ["AL-01", "AL-02"]
+    }
+  ],
+  "transformers": [
+    {
+      "transformer_code": "TR-001",
+      "power_kva": 150,
+      "feeder_code": "AL-01",
+      "substation_code": "SE-01",
+      "latitude": -7.9401,
+      "longitude": -34.8734,
+      "measured_energy_kwh": 176450,
+      "injected_energy_kwh": 12600,
+      "received_gd_energy_kwh": 8500,
+      "technical_loss_kwh": 0
+    },
+    {
+      "transformer_code": "TR-002",
+      "power_kva": 112.5,
+      "feeder_code": "AL-01",
+      "substation_code": "SE-01",
+      "latitude": -7.9442,
+      "longitude": -34.8775,
+      "measured_energy_kwh": 121300,
+      "injected_energy_kwh": 7200,
+      "received_gd_energy_kwh": 3100,
+      "technical_loss_kwh": 0
+    },
+    {
+      "transformer_code": "TR-003",
+      "power_kva": 75,
+      "feeder_code": "AL-02",
+      "substation_code": "SE-01",
+      "latitude": -7.9368,
+      "longitude": -34.8689,
+      "measured_energy_kwh": 88400,
+      "injected_energy_kwh": 3100,
+      "received_gd_energy_kwh": 900,
+      "technical_loss_kwh": 0
+    }
+  ],
+  "customers": [
+    {
+      "installation_id": "UC-0001",
+      "customer_name": "Cliente Demo 001",
+      "cpf": "00000000001",
+      "postal_code": "51000-000",
+      "transformer_code": "TR-001",
+      "monthly_consumption_kwh": 780,
+      "has_gd": true,
+      "gd_received_kwh": 120,
+      "gd_injected_kwh": 80
+    },
+    {
+      "installation_id": "UC-0002",
+      "customer_name": "Cliente Demo 002",
+      "cpf": "00000000002",
+      "postal_code": "51000-000",
+      "transformer_code": "TR-001",
+      "monthly_consumption_kwh": 640,
+      "has_gd": false,
+      "gd_received_kwh": 0,
+      "gd_injected_kwh": 0
+    },
+    {
+      "installation_id": "UC-0003",
+      "customer_name": "Cliente Demo 003",
+      "cpf": "00000000003",
+      "postal_code": "51000-000",
+      "transformer_code": "TR-001",
+      "monthly_consumption_kwh": 920,
+      "has_gd": true,
+      "gd_received_kwh": 180,
+      "gd_injected_kwh": 130
+    },
+    {
+      "installation_id": "UC-0004",
+      "customer_name": "Cliente Demo 004",
+      "cpf": "00000000004",
+      "postal_code": "51000-000",
+      "transformer_code": "TR-002",
+      "monthly_consumption_kwh": 510,
+      "has_gd": false,
+      "gd_received_kwh": 0,
+      "gd_injected_kwh": 0
+    },
+    {
+      "installation_id": "UC-0005",
+      "customer_name": "Cliente Demo 005",
+      "cpf": "00000000005",
+      "postal_code": "51000-000",
+      "transformer_code": "TR-003",
+      "monthly_consumption_kwh": 430,
+      "has_gd": false,
+      "gd_received_kwh": 0,
+      "gd_injected_kwh": 0
+    }
+  ],
+  "customer_aggregates": [
+    {
+      "transformer_code": "TR-001",
+      "customer_count": 186,
+      "total_consumption_kwh": 138000
+    },
+    {
+      "transformer_code": "TR-002",
+      "customer_count": 142,
+      "total_consumption_kwh": 103900
+    },
+    {
+      "transformer_code": "TR-003",
+      "customer_count": 98,
+      "total_consumption_kwh": 80100
+    }
+  ],
+  "roof_estimates": [
+    {
+      "transformer_code": "TR-001",
+      "estimated_roofs": 137,
+      "confidence_score": 0.87,
+      "source": "imagem_demo"
+    },
+    {
+      "transformer_code": "TR-002",
+      "estimated_roofs": 91,
+      "confidence_score": 0.82,
+      "source": "imagem_demo"
+    },
+    {
+      "transformer_code": "TR-003",
+      "estimated_roofs": 66,
+      "confidence_score": 0.78,
+      "source": "imagem_demo"
+    }
+  ]
+}

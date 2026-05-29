@@ -1,0 +1,17 @@
+{
+  "source": "CRAS simulado para demonstração",
+  "territories": [
+    {
+      "territory_id": "CRAS-REC-001",
+      "cras_name": "CRAS Boa Viagem",
+      "city": "Recife",
+      "neighborhood": "Boa Viagem",
+      "postal_code": "51000-000",
+      "estimated_houses": 127,
+      "estimated_people": 438,
+      "families_assisted": 420,
+      "vulnerability_index": 0.68,
+      "vulnerability_level": "Média/Alta"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "source": "IBGE simulado para demonstração",
+  "sectors": [
+    {
+      "sector_id": "260790105000001",
+      "city": "Recife",
+      "neighborhood": "Boa Viagem",
+      "postal_code": "51000-000",
+      "estimated_houses": 102,
+      "estimated_people": 356,
+      "average_people_per_house": 3.49,
+      "average_income": 1850.0,
+      "vulnerability_index": 0.62
+    }
+  ]
+}
