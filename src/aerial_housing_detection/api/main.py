@@ -2,6 +2,9 @@ from fastapi import FastAPI
 
 from config.logging_config import configure_logging
 from config.settings import get_settings
+from src.aerial_housing_detection.api.routes.concessionaria_real import (
+    router as concessionaria_real_router,
+)
 from src.aerial_housing_detection.api.routes.demo_realistic import (
     router as demo_realistic_router,
 )
@@ -53,6 +56,7 @@ def create_app() -> FastAPI:
     app.mount("/app/static", web_static_files, name="app-static")
     app.include_router(web_auth_router)
     app.include_router(demo_realistic_router)
+    app.include_router(concessionaria_real_router)
     return app
 
 
