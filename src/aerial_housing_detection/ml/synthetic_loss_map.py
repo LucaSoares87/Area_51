@@ -366,7 +366,9 @@ def build_map_html(
       </div>
 
       <div class="notice">
-        Esta visualização usa dados sintéticos. A finalidade é validar a camada de mapa antes da integração com dados reais, CRAS, IBGE, imagem e inspeções de campo.
+        Esta visualização usa dados sintéticos. A finalidade é validar a camada
+        de mapa antes da integração com dados reais, CRAS, IBGE, imagem e
+        inspeções de campo.
       </div>
     </aside>
     <section id="map">
