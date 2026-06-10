@@ -6,6 +6,7 @@ const state = {
   transformers: [],
   mvCustomers: [],
   substations: [],
+  currentHeatFilter: "TODOS",
 };
 
 const endpoints = {
@@ -22,6 +23,7 @@ const endpoints = {
 
 document.addEventListener("DOMContentLoaded", () => {
   bindActions();
+  bindFilters();
   loadDashboard();
 });
 
@@ -37,16 +39,40 @@ function bindActions() {
   });
 }
 
+function bindFilters() {
+  const filterButtons = document.querySelectorAll("[data-heat-filter]");
+
+  filterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const filter = button.dataset.heatFilter || "TODOS";
+      state.currentHeatFilter = filter;
+
+      filterButtons.forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+
+      renderTransformersTable();
+      renderSuspiciousInstallationsTable();
+      renderMap();
+      updateFilterPill();
+    });
+  });
+}
+
 async function runAgent() {
   setStatus("Executando agente sintético e atualizando painel...", "success");
+  setText("context-agent-status", "Executando");
 
   try {
     await postJson(endpoints.runLossAgent);
     await postJson(endpoints.runFeederOperational);
     await loadDashboard();
+
     setStatus("Agente executado e painel atualizado com sucesso.", "success");
+    setText("context-agent-status", "Atualizado");
+    setText("context-updated-at", formatDateTime(new Date()));
   } catch (error) {
     setStatus(`Erro ao executar agente: ${error.message}`, "error");
+    setText("context-agent-status", "Erro");
   }
 }
 
@@ -81,14 +107,21 @@ async function loadDashboard() {
     state.substations = substationsResponse.items || [];
 
     renderMetrics();
+    renderExecutiveMetrics();
+    renderCommercialMetrics();
     renderSectionsTable();
     renderReclosers();
     renderTransformersTable();
+    renderSuspiciousInstallationsTable();
     renderMap();
+    updateFilterPill();
 
     setStatus("Painel carregado com dados sintéticos operacionais.", "success");
+    setText("context-agent-status", "Carregado");
+    setText("context-updated-at", formatDateTime(new Date()));
   } catch (error) {
     setStatus(`Erro ao carregar painel: ${error.message}`, "error");
+    setText("context-agent-status", "Erro");
   }
 }
 
@@ -97,6 +130,9 @@ function renderMetrics() {
   const substation = state.substations[0] || {};
 
   setText("feeder-code", summary.codigo_alimentador || "--");
+  setText("context-feeder", summary.codigo_alimentador || "--");
+  setText("context-substation", summary.codigo_subestacao || "--");
+
   setText("substation-code", summary.codigo_subestacao || "--");
   setText("substation-name", substation.nome_subestacao || "Origem do alimentador");
 
@@ -108,6 +144,67 @@ function renderMetrics() {
   setText("network-distance", formatNumber(summary.extensao_rede_km, 2));
   setText("estimated-loss", formatNumber(summary.perda_estimada_gwh, 3));
   setText("loss-percent", formatPercent(summary.perda_percentual));
+}
+
+function renderExecutiveMetrics() {
+  const criticalSection = getCriticalSection();
+  const criticalRecloser = getCriticalRecloser();
+  const criticalTransformer = getCriticalTransformer();
+  const highHeatCount = state.transformers.filter((item) => normalizeHeat(item.nivel_calor) === "ALTO").length;
+
+  setText("critical-section", criticalSection?.codigo_secao || "--");
+  setText(
+    "critical-section-detail",
+    criticalSection
+      ? `${formatNumber(criticalSection.perda_estimada_gwh, 3)} GWh | ${formatPercent(criticalSection.perda_percentual)}%`
+      : "Maior concentração de perdas",
+  );
+
+  setText("critical-recloser", criticalRecloser?.codigo_religador || "--");
+  setText(
+    "critical-recloser-detail",
+    criticalRecloser
+      ? `${formatNumber(criticalRecloser.perda_jusante_gwh, 3)} GWh a jusante`
+      : "Maior perda a jusante",
+  );
+
+  setText("critical-transformer", criticalTransformer?.codigo_transformador || "--");
+  setText(
+    "critical-transformer-detail",
+    criticalTransformer
+      ? `${formatNumber(criticalTransformer.perda_estimada_mwh, 2)} MWh estimados`
+      : "Maior perda estimada",
+  );
+
+  setText("high-heat-count", formatInteger(highHeatCount));
+  setText("legend-high-count", formatInteger(highHeatCount));
+  setText("legend-medium-count", formatInteger(countByHeat("MEDIO")));
+  setText("legend-low-count", formatInteger(countByHeat("BAIXO")));
+}
+
+function renderCommercialMetrics() {
+  const suspiciousInstallations = buildSyntheticSuspiciousInstallations();
+
+  const totals = suspiciousInstallations.reduce(
+    (accumulator, item) => {
+      accumulator.realNotes += toNumber(item.ntReal);
+      accumulator.unproductiveNotes += toNumber(item.ntImprod);
+      accumulator.fraudProcedures += toNumber(item.procFraud);
+      accumulator.recoveredKwh += toNumber(item.kwhRecovered);
+      return accumulator;
+    },
+    {
+      realNotes: 0,
+      unproductiveNotes: 0,
+      fraudProcedures: 0,
+      recoveredKwh: 0,
+    },
+  );
+
+  setText("real-notes-count", formatInteger(totals.realNotes));
+  setText("unproductive-notes-count", formatInteger(totals.unproductiveNotes));
+  setText("fraud-procedure-count", formatInteger(totals.fraudProcedures));
+  setText("recovered-kwh", formatInteger(totals.recoveredKwh));
 }
 
 function renderSectionsTable() {
@@ -146,33 +243,41 @@ function renderReclosers() {
     return;
   }
 
+  setText("recloser-count-pill", `${formatInteger(state.reclosers.length)} religadores`);
   list.innerHTML = "";
 
-  state.reclosers.forEach((recloser) => {
+  if (state.reclosers.length === 0) {
+    list.innerHTML = '<article class="empty-state">Nenhum religador sintético encontrado.</article>';
+    return;
+  }
+
+  const rankedReclosers = [...state.reclosers].sort((left, right) => {
+    return toNumber(right.perda_jusante_gwh) - toNumber(left.perda_jusante_gwh);
+  });
+
+  rankedReclosers.forEach((recloser) => {
     const item = document.createElement("article");
-    item.className = "stack-item";
+    item.className = "recloser-card";
 
     item.innerHTML = `
-      <div class="stack-item-header">
-        <strong>${escapeHtml(recloser.codigo_religador)}</strong>
+      <div class="recloser-card-header">
+        <div>
+          <strong>${escapeHtml(recloser.codigo_religador)}</strong>
+          <p>Trecho protegido: ${escapeHtml(recloser.trecho)}</p>
+        </div>
         ${heatBadge(recloser.nivel_calor)}
       </div>
-      <p>
-        Trecho ${escapeHtml(recloser.trecho)} |
-        ${formatInteger(recloser.transformadores_jusante)} trafos a jusante |
-        ${formatInteger(recloser.uc_bt_jusante)} UC BT |
-        ${formatInteger(recloser.uc_mt_jusante)} UC MT |
-        ${formatInteger(recloser.gd_jusante)} GD
-      </p>
-      <p>
-        Consumo a jusante:
-        ${formatNumber(recloser.consumo_jusante_gwh, 3)} GWh |
-        Injetada:
-        ${formatNumber(recloser.energia_injetada_jusante_gwh, 3)} GWh |
-        Perda:
-        ${formatNumber(recloser.perda_jusante_gwh, 3)} GWh
-        (${formatPercent(recloser.perda_percentual_jusante)})
-      </p>
+
+      <div class="recloser-metrics">
+        <span>Transformadores<strong>${formatInteger(recloser.transformadores_jusante)}</strong></span>
+        <span>UC BT<strong>${formatInteger(recloser.uc_bt_jusante)}</strong></span>
+        <span>UC MT<strong>${formatInteger(recloser.uc_mt_jusante)}</strong></span>
+        <span>MMGD<strong>${formatInteger(recloser.gd_jusante)}</strong></span>
+        <span>Consumo<strong>${formatNumber(recloser.consumo_jusante_gwh, 3)} GWh</strong></span>
+        <span>Injetada<strong>${formatNumber(recloser.energia_injetada_jusante_gwh, 3)} GWh</strong></span>
+        <span>Perda<strong>${formatNumber(recloser.perda_jusante_gwh, 3)} GWh</strong></span>
+        <span>Perda percentual<strong>${formatPercent(recloser.perda_percentual_jusante)}%</strong></span>
+      </div>
     `;
 
     list.appendChild(item);
@@ -186,7 +291,7 @@ function renderTransformersTable() {
     return;
   }
 
-  const rankedTransformers = [...state.transformers]
+  const rankedTransformers = getFilteredTransformers()
     .sort((left, right) => {
       return toNumber(right.perda_estimada_mwh) - toNumber(left.perda_estimada_mwh);
     })
@@ -194,17 +299,71 @@ function renderTransformersTable() {
 
   tableBody.innerHTML = "";
 
-  rankedTransformers.forEach((transformer) => {
+  if (rankedTransformers.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="8">Nenhum transformador encontrado para o filtro selecionado.</td></tr>';
+    return;
+  }
+
+  rankedTransformers.forEach((transformer, index) => {
     const row = document.createElement("tr");
 
     row.innerHTML = `
+      <td>${index + 1}</td>
       <td>${escapeHtml(transformer.codigo_transformador)}</td>
       <td>${escapeHtml(transformer.trecho)}</td>
       <td>${formatInteger(transformer.uc_bt)}</td>
       <td>${formatInteger(transformer.gd)}</td>
       <td>${formatNumber(transformer.energia_injetada_mwh, 2)}</td>
-      <td>${formatNumber(transformer.perda_estimada_mwh, 2)}</td>
+      <td><strong>${formatNumber(transformer.perda_estimada_mwh, 2)}</strong></td>
       <td>${heatBadge(transformer.nivel_calor)}</td>
+    `;
+
+    tableBody.appendChild(row);
+  });
+}
+
+function renderSuspiciousInstallationsTable() {
+  const tableBody = document.getElementById("suspicious-installations-table-body");
+
+  if (!tableBody) {
+    return;
+  }
+
+  const installations = buildSyntheticSuspiciousInstallations()
+    .filter((item) => {
+      if (state.currentHeatFilter === "TODOS") {
+        return true;
+      }
+
+      return item.riskHeat === state.currentHeatFilter;
+    })
+    .sort((left, right) => right.riskScore - left.riskScore)
+    .slice(0, 12);
+
+  tableBody.innerHTML = "";
+
+  if (installations.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="13">Nenhuma instalação encontrada para o filtro selecionado.</td></tr>';
+    return;
+  }
+
+  installations.forEach((item, index) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${escapeHtml(item.installationCode)}</td>
+      <td>${escapeHtml(item.sector)}</td>
+      <td>${escapeHtml(item.transformerCode)}</td>
+      <td>${formatInteger(item.ntReal)}</td>
+      <td>${formatInteger(item.ntImprod)}</td>
+      <td>${formatInteger(item.procFraud)}</td>
+      <td>${formatInteger(item.procDefect)}</td>
+      <td>${item.hasMmgd ? "Sim" : "Não"}</td>
+      <td>${formatNumber(item.averageBilledKwh, 1)}</td>
+      <td>${formatNumber(item.averageMeasuredKwh, 1)}</td>
+      <td>${formatInteger(item.kwhRecovered)}</td>
+      <td><span class="risk-score">${formatInteger(item.riskScore)}</span> ${heatBadge(item.riskHeat)}</td>
     `;
 
     tableBody.appendChild(row);
@@ -237,10 +396,14 @@ function renderMap() {
 
   const bounds = buildBounds(allGeoPoints);
 
+  if (!bounds) {
+    return;
+  }
+
   renderRouteLine(bounds);
   renderRoutePoints(map, bounds);
   renderTransformers(map, bounds);
-  renderReclosers(map, bounds);
+  renderReclosersOnMap(map, bounds);
   renderMvCustomers(map, bounds);
   renderSubstations(map, bounds);
 }
@@ -286,15 +449,11 @@ function renderRoutePoints(map, bounds) {
   state.route
     .filter((point) => hasCoordinates(point))
     .forEach((point) => {
-      if (point.tipo_ponto === "subestacao") {
-        return;
-      }
-
-      if (point.tipo_ponto === "religador") {
-        return;
-      }
-
-      if (point.tipo_ponto === "cliente_mt") {
+      if (
+        point.tipo_ponto === "subestacao" ||
+        point.tipo_ponto === "religador" ||
+        point.tipo_ponto === "cliente_mt"
+      ) {
         return;
       }
 
@@ -304,7 +463,7 @@ function renderRoutePoints(map, bounds) {
         `Alimentador: ${point.codigo_alimentador}`,
       ].join("\n");
 
-      addMapPoint(map, bounds, point, "transformer low", tooltip);
+      addMapPoint(map, bounds, point, "transformer baixo", tooltip, "BAIXO");
     });
 }
 
@@ -312,25 +471,26 @@ function renderTransformers(map, bounds) {
   state.transformers
     .filter((point) => hasCoordinates(point))
     .forEach((transformer) => {
-      const heatClass = heatClassName(transformer.nivel_calor);
+      const normalizedHeat = normalizeHeat(transformer.nivel_calor);
+      const heatClass = heatClassName(normalizedHeat);
       const tooltip = [
         `Trafo: ${transformer.codigo_transformador}`,
         `Trecho: ${transformer.trecho}`,
         `UC BT: ${formatInteger(transformer.uc_bt)}`,
         `UC MT: ${formatInteger(transformer.uc_mt)}`,
-        `GD: ${formatInteger(transformer.gd)}`,
+        `MMGD: ${formatInteger(transformer.gd)}`,
         `Consumo: ${formatNumber(transformer.consumo_mensal_mwh, 2)} MWh`,
         `Injetada: ${formatNumber(transformer.energia_injetada_mwh, 2)} MWh`,
         `Perda: ${formatNumber(transformer.perda_estimada_mwh, 2)} MWh`,
-        `Perda %: ${formatPercent(transformer.perda_percentual)}`,
-        `Calor: ${transformer.nivel_calor}`,
+        `Perda %: ${formatPercent(transformer.perda_percentual)}%`,
+        `Calor: ${normalizedHeat}`,
       ].join("\n");
 
-      addMapPoint(map, bounds, transformer, `transformer ${heatClass}`, tooltip);
+      addMapPoint(map, bounds, transformer, `transformer ${heatClass}`, tooltip, normalizedHeat);
     });
 }
 
-function renderReclosers(map, bounds) {
+function renderReclosersOnMap(map, bounds) {
   state.reclosers
     .filter((point) => hasCoordinates(point))
     .forEach((recloser) => {
@@ -340,12 +500,12 @@ function renderReclosers(map, bounds) {
         `Trafos a jusante: ${formatInteger(recloser.transformadores_jusante)}`,
         `UC BT a jusante: ${formatInteger(recloser.uc_bt_jusante)}`,
         `UC MT a jusante: ${formatInteger(recloser.uc_mt_jusante)}`,
-        `GD a jusante: ${formatInteger(recloser.gd_jusante)}`,
+        `MMGD a jusante: ${formatInteger(recloser.gd_jusante)}`,
         `Perda: ${formatNumber(recloser.perda_jusante_gwh, 3)} GWh`,
-        `Perda %: ${formatPercent(recloser.perda_percentual_jusante)}`,
+        `Perda %: ${formatPercent(recloser.perda_percentual_jusante)}%`,
       ].join("\n");
 
-      addMapPoint(map, bounds, recloser, "recloser", tooltip);
+      addMapPoint(map, bounds, recloser, "recloser", tooltip, "TODOS");
     });
 }
 
@@ -360,7 +520,7 @@ function renderMvCustomers(map, bounds) {
         `Consumo: ${formatNumber(customer.consumo_mensal_mwh, 2)} MWh`,
       ].join("\n");
 
-      addMapPoint(map, bounds, customer, "mt", tooltip);
+      addMapPoint(map, bounds, customer, "mt", tooltip, "TODOS");
     });
 }
 
@@ -374,17 +534,18 @@ function renderSubstations(map, bounds) {
         `Tensão: ${formatNumber(substation.tensao_kv, 1)} kV`,
       ].join("\n");
 
-      addMapPoint(map, bounds, substation, "substation", tooltip);
+      addMapPoint(map, bounds, substation, "substation", tooltip, "TODOS");
     });
 }
 
-function addMapPoint(map, bounds, point, className, tooltip) {
+function addMapPoint(map, bounds, point, className, tooltip, heatLevel) {
   if (!map || !bounds || !point || !hasCoordinates(point)) {
     return;
   }
 
   const position = projectPoint(point, bounds);
   const element = document.createElement("button");
+  const normalizedHeat = normalizeHeat(heatLevel);
 
   element.type = "button";
   element.className = `map-point ${className}`;
@@ -392,7 +553,127 @@ function addMapPoint(map, bounds, point, className, tooltip) {
   element.style.top = `${position.y}%`;
   element.dataset.tooltip = tooltip;
 
+  if (
+    state.currentHeatFilter !== "TODOS" &&
+    normalizedHeat !== "TODOS" &&
+    normalizedHeat !== state.currentHeatFilter
+  ) {
+    element.classList.add("hidden-by-filter");
+  }
+
   map.appendChild(element);
+}
+
+function buildSyntheticSuspiciousInstallations() {
+  const selectedTransformers = [...state.transformers]
+    .sort((left, right) => {
+      return toNumber(right.perda_estimada_mwh) - toNumber(left.perda_estimada_mwh);
+    })
+    .slice(0, 36);
+
+  return selectedTransformers.map((transformer, index) => {
+    const loss = toNumber(transformer.perda_estimada_mwh);
+    const billedKwh = Math.max(120, toNumber(transformer.consumo_mensal_mwh) * 31);
+    const measuredKwh = Math.max(80, billedKwh - loss * 18 - (index % 4) * 27);
+    const hasMmgd = toNumber(transformer.gd) > 0;
+    const ntReal = loss > 11 ? 3 : loss > 8 ? 2 : 1;
+    const ntImprod = index % 5 === 0 ? 2 : index % 3 === 0 ? 1 : 0;
+    const procFraud = loss > 10 ? 1 + (index % 2) : index % 7 === 0 ? 1 : 0;
+    const procDefect = loss > 8 && index % 3 === 0 ? 1 : 0;
+    const kwhRecovered = Math.round(loss * 95 + procFraud * 240 + procDefect * 120);
+    const riskScore = calculateSyntheticRiskScore({
+      loss,
+      billedKwh,
+      measuredKwh,
+      ntReal,
+      ntImprod,
+      procFraud,
+      procDefect,
+      hasMmgd,
+      kwhRecovered,
+    });
+
+    return {
+      installationCode: `INS-${String(index + 1).padStart(6, "0")}`,
+      sector: transformer.trecho || `S${(index % 4) + 1}`,
+      transformerCode: transformer.codigo_transformador,
+      ntReal,
+      ntImprod,
+      procFraud,
+      procDefect,
+      hasMmgd,
+      averageBilledKwh: billedKwh,
+      averageMeasuredKwh: measuredKwh,
+      kwhRecovered,
+      riskScore,
+      riskHeat: classifySyntheticRisk(riskScore),
+    };
+  });
+}
+
+function calculateSyntheticRiskScore(input) {
+  const consumptionGap = Math.max(0, input.billedKwh - input.measuredKwh);
+  let score = 0;
+
+  score += Math.min(30, input.loss * 2);
+  score += Math.min(20, consumptionGap / 35);
+  score += input.ntReal * 5;
+  score += input.ntImprod * 2;
+  score += input.procFraud * 15;
+  score += input.procDefect * 8;
+  score += input.hasMmgd ? 4 : 0;
+  score += Math.min(12, input.kwhRecovered / 180);
+
+  return Math.round(Math.min(100, score));
+}
+
+function classifySyntheticRisk(score) {
+  if (score >= 70) {
+    return "ALTO";
+  }
+
+  if (score >= 45) {
+    return "MEDIO";
+  }
+
+  return "BAIXO";
+}
+
+function getFilteredTransformers() {
+  if (state.currentHeatFilter === "TODOS") {
+    return [...state.transformers];
+  }
+
+  return state.transformers.filter((transformer) => {
+    return normalizeHeat(transformer.nivel_calor) === state.currentHeatFilter;
+  });
+}
+
+function getCriticalSection() {
+  return [...state.sections].sort((left, right) => {
+    return toNumber(right.perda_estimada_gwh) - toNumber(left.perda_estimada_gwh);
+  })[0];
+}
+
+function getCriticalRecloser() {
+  return [...state.reclosers].sort((left, right) => {
+    return toNumber(right.perda_jusante_gwh) - toNumber(left.perda_jusante_gwh);
+  })[0];
+}
+
+function getCriticalTransformer() {
+  return [...state.transformers].sort((left, right) => {
+    return toNumber(right.perda_estimada_mwh) - toNumber(left.perda_estimada_mwh);
+  })[0];
+}
+
+function countByHeat(heatLevel) {
+  return state.transformers.filter((item) => normalizeHeat(item.nivel_calor) === heatLevel).length;
+}
+
+function updateFilterPill() {
+  const text = state.currentHeatFilter === "TODOS" ? "Todos" : `Calor ${state.currentHeatFilter.toLowerCase()}`;
+  setText("transformer-filter-pill", text);
 }
 
 function buildBounds(points) {
@@ -487,14 +768,14 @@ function setText(id, value) {
 }
 
 function heatBadge(level) {
-  const normalizedLevel = String(level || "BAIXO").toUpperCase();
+  const normalizedLevel = normalizeHeat(level);
   const className = heatClassName(normalizedLevel);
 
   return `<span class="badge ${className}">${escapeHtml(normalizedLevel)}</span>`;
 }
 
 function heatClassName(level) {
-  const normalizedLevel = String(level || "BAIXO").toUpperCase();
+  const normalizedLevel = normalizeHeat(level);
 
   if (normalizedLevel === "ALTO") {
     return "alto";
@@ -505,6 +786,36 @@ function heatClassName(level) {
   }
 
   return "baixo";
+}
+
+function normalizeHeat(level) {
+  const normalizedLevel = String(level || "BAIXO")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (normalizedLevel === "HIGH") {
+    return "ALTO";
+  }
+
+  if (normalizedLevel === "MEDIUM") {
+    return "MEDIO";
+  }
+
+  if (normalizedLevel === "LOW") {
+    return "BAIXO";
+  }
+
+  if (normalizedLevel === "TODOS") {
+    return "TODOS";
+  }
+
+  if (["ALTO", "MEDIO", "BAIXO"].includes(normalizedLevel)) {
+    return normalizedLevel;
+  }
+
+  return "BAIXO";
 }
 
 function hasCoordinates(point) {
@@ -543,6 +854,13 @@ function formatPercent(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+function formatDateTime(value) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(value);
 }
 
 function escapeHtml(value) {
