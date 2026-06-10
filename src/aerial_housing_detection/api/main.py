@@ -6,6 +6,7 @@ import src.aerial_housing_detection.api.routes.operational_features  # pyright: 
 import src.aerial_housing_detection.api.routes.operational_search  # pyright: ignore[reportMissingImports]
 import src.aerial_housing_detection.api.routes.report
 import src.aerial_housing_detection.api.routes.roof_upload  # pyright: ignore[reportMissingImports]
+import src.aerial_housing_detection.api.routes.synthetic_feeder_operational  # type: ignore
 import src.aerial_housing_detection.api.routes.synthetic_loss_agent  # type: ignore
 import src.aerial_housing_detection.api.routes.web_app  # type: ignore
 import src.aerial_housing_detection.api.routes.web_auth
@@ -60,7 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(
         src.aerial_housing_detection.api.routes.synthetic_loss_agent.router
     )
-
+    app.include_router(src.aerial_housing_detection.api.routes.synthetic_feeder_operational.router)
     return app
 
 

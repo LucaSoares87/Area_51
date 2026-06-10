@@ -26,6 +26,10 @@ def serve_login() -> FileResponse:
 def serve_app() -> FileResponse:
     return FileResponse(WEB_STATIC_DIR / "index.html")
 
+@router.get("/app/synthetic-loss-agent", include_in_schema=False)
+def serve_synthetic_loss_agent_dashboard() -> FileResponse:
+    return FileResponse(WEB_STATIC_DIR / "synthetic_loss_agent.html")
+
 
 @router.get("/app/map", include_in_schema=False)
 def serve_operational_map() -> FileResponse:
