@@ -13,8 +13,9 @@
         <p class="eyebrow">Area 51 - Agente Sintético de Perdas</p>
         <h1>Ação - Modelo Alimentador - <span id="feeder-code">HPO-0IL4</span></h1>
         <p class="hero-subtitle">
-          Painel sintético para análise de perdas, percurso do alimentador,
-          religadores, transformadores, clientes MT, GD e criticidade operacional.
+          Painel operacional sintético para análise de perdas, percurso do alimentador,
+          religadores, transformadores, clientes MT, MMGD, histórico de notas,
+          recuperação de energia e criticidade operacional.
         </p>
       </div>
 
@@ -30,6 +31,33 @@
 
     <section class="status-bar" id="status-message">
       Carregando dados sintéticos do alimentador...
+    </section>
+
+    <section class="context-panel" aria-label="Contexto operacional">
+      <article>
+        <span>Alimentador</span>
+        <strong id="context-feeder">--</strong>
+      </article>
+
+      <article>
+        <span>Subestação</span>
+        <strong id="context-substation">--</strong>
+      </article>
+
+      <article>
+        <span>Base</span>
+        <strong>Sintética</strong>
+      </article>
+
+      <article>
+        <span>Status</span>
+        <strong id="context-agent-status">Aguardando carga</strong>
+      </article>
+
+      <article>
+        <span>Última atualização</span>
+        <strong id="context-updated-at">--</strong>
+      </article>
     </section>
 
     <section class="dashboard-grid">
@@ -52,7 +80,7 @@
       </article>
 
       <article class="card metric-card">
-        <span class="metric-label">GD</span>
+        <span class="metric-label">MMGD</span>
         <strong id="total-gd">--</strong>
         <small>Unidades com geração distribuída</small>
       </article>
@@ -66,7 +94,7 @@
       <article class="card metric-card">
         <span class="metric-label">Religadores</span>
         <strong id="total-reclosers">--</strong>
-        <small>Equipamentos no percurso sintético</small>
+        <small>Equipamentos estratégicos de setorização</small>
       </article>
 
       <article class="card metric-card">
@@ -80,6 +108,80 @@
         <strong><span id="estimated-loss">--</span> GWh</strong>
         <small><span id="loss-percent">--</span>% do consumo sintético</small>
       </article>
+    </section>
+
+    <section class="dashboard-grid executive-grid">
+      <article class="card metric-card compact">
+        <span class="metric-label">Seção mais crítica</span>
+        <strong id="critical-section">--</strong>
+        <small id="critical-section-detail">Maior concentração de perdas</small>
+      </article>
+
+      <article class="card metric-card compact">
+        <span class="metric-label">Religador mais crítico</span>
+        <strong id="critical-recloser">--</strong>
+        <small id="critical-recloser-detail">Maior perda a jusante</small>
+      </article>
+
+      <article class="card metric-card compact">
+        <span class="metric-label">Trafo mais crítico</span>
+        <strong id="critical-transformer">--</strong>
+        <small id="critical-transformer-detail">Maior perda estimada</small>
+      </article>
+
+      <article class="card metric-card compact warning">
+        <span class="metric-label">Pontos em calor alto</span>
+        <strong id="high-heat-count">--</strong>
+        <small>Transformadores classificados como críticos</small>
+      </article>
+    </section>
+
+    <section class="dashboard-grid commercial-grid">
+      <article class="card metric-card compact">
+        <span class="metric-label">Notas reais</span>
+        <strong id="real-notes-count">--</strong>
+        <small>Indicador sintético inspirado em NT_REAL</small>
+      </article>
+
+      <article class="card metric-card compact">
+        <span class="metric-label">Notas improdutivas</span>
+        <strong id="unproductive-notes-count">--</strong>
+        <small>Indicador sintético inspirado em NT_IMPROD</small>
+      </article>
+
+      <article class="card metric-card compact">
+        <span class="metric-label">Procedência fraude</span>
+        <strong id="fraud-procedure-count">--</strong>
+        <small>Indicador sintético inspirado em NT_PROC_FRA</small>
+      </article>
+
+      <article class="card metric-card compact">
+        <span class="metric-label">kWh recuperado</span>
+        <strong id="recovered-kwh">--</strong>
+        <small>Energia recuperada sintética estimada</small>
+      </article>
+    </section>
+
+    <section class="filter-panel" aria-label="Filtros do painel">
+      <div>
+        <p class="eyebrow">Filtros visuais</p>
+        <h2>Criticidade operacional</h2>
+      </div>
+
+      <div class="filter-actions" role="group" aria-label="Filtro por nível de calor">
+        <button class="filter-chip active" type="button" data-heat-filter="TODOS">
+          Todos
+        </button>
+        <button class="filter-chip" type="button" data-heat-filter="ALTO">
+          Calor alto
+        </button>
+        <button class="filter-chip" type="button" data-heat-filter="MEDIO">
+          Calor médio
+        </button>
+        <button class="filter-chip" type="button" data-heat-filter="BAIXO">
+          Calor baixo
+        </button>
+      </div>
     </section>
 
     <section class="content-grid">
@@ -105,6 +207,12 @@
             <p><span class="legend-dot high"></span> Trafo calor alto</p>
             <p><span class="legend-dot medium"></span> Trafo calor médio</p>
             <p><span class="legend-dot low"></span> Trafo calor baixo</p>
+
+            <div class="legend-counters">
+              <span>Alto: <strong id="legend-high-count">--</strong></span>
+              <span>Médio: <strong id="legend-medium-count">--</strong></span>
+              <span>Baixo: <strong id="legend-low-count">--</strong></span>
+            </div>
           </aside>
         </div>
       </article>
@@ -127,7 +235,7 @@
                 <th>Trafos</th>
                 <th>UC BT</th>
                 <th>UC MT</th>
-                <th>GD</th>
+                <th>MMGD</th>
                 <th>Perda GWh</th>
                 <th>Perda %</th>
                 <th>Calor</th>
@@ -144,29 +252,36 @@
         <div class="section-header">
           <div>
             <p class="eyebrow">Religadores</p>
-            <h2>Perdas e carga a jusante</h2>
+            <h2>Carga e perdas a jusante</h2>
           </div>
+          <span class="pill" id="recloser-count-pill">-- religadores</span>
         </div>
 
-        <div id="recloser-list" class="stack-list"></div>
+        <div id="recloser-list" class="stack-list recloser-list">
+          <article class="empty-state">
+            Carregando religadores sintéticos...
+          </article>
+        </div>
       </article>
 
       <article class="card">
         <div class="section-header">
           <div>
             <p class="eyebrow">Transformadores críticos</p>
-            <h2>Top 10 por perda estimada</h2>
+            <h2>Ranking operacional por perda estimada</h2>
           </div>
+          <span class="pill" id="transformer-filter-pill">Todos</span>
         </div>
 
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
+                <th>#</th>
                 <th>Trafo</th>
                 <th>Trecho</th>
                 <th>UC BT</th>
-                <th>GD</th>
+                <th>MMGD</th>
                 <th>Injetada MWh</th>
                 <th>Perda MWh</th>
                 <th>Calor</th>
@@ -176,6 +291,43 @@
           </table>
         </div>
       </article>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Instalações sintéticas suspeitas</p>
+          <h2>Indicadores inspirados em notas, consumo, MMGD e recuperação</h2>
+        </div>
+        <span class="pill">Base sintética</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Instalação</th>
+              <th>Setor</th>
+              <th>Trafo</th>
+              <th>NT real</th>
+              <th>NT improd.</th>
+              <th>Proc. fraude</th>
+              <th>Proc. defeito</th>
+              <th>MMGD</th>
+              <th>Med. faturada</th>
+              <th>Med. medida</th>
+              <th>kWh recup.</th>
+              <th>Risco</th>
+            </tr>
+          </thead>
+          <tbody id="suspicious-installations-table-body">
+            <tr>
+              <td colspan="13">Carregando instalações sintéticas suspeitas...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </main>
 
